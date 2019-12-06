@@ -1,1 +1,2 @@
-test: test.cc
+all:
+	gcc *.c

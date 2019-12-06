@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "qf.h"
 
@@ -176,7 +177,7 @@ static void insert_into(struct quotient_filter* qf, uint64_t s, uint64_t elt) {
     } while (!empty);
 }
 
-bool qf_insert(struct quotient_filter* qf, uint64_t hash) {
+bool qf_insert(struct quotient_filter* qf, uint64_t hash, int32_t scan_limit) {
     if (qf->qf_entries >= qf->qf_max_size) {
         return false;
     }
@@ -202,7 +203,11 @@ bool qf_insert(struct quotient_filter* qf, uint64_t hash) {
 
     if (is_occupied(T_fq)) {
         /* Move the cursor to the insert position in the fq run. */
+        int i = 0;
         do {
+            if (i >= scan_limit) {
+                return false;
+            }
             uint64_t rem = get_remainder(get_elem(qf, s));
             if (rem == fr) {
                 return true;
@@ -210,6 +215,7 @@ bool qf_insert(struct quotient_filter* qf, uint64_t hash) {
                 break;
             }
             s = incr(qf, s);
+            i++;
         } while (is_continuation(get_elem(qf, s)));
 
         if (s == start) {
@@ -376,11 +382,11 @@ bool qf_merge(struct quotient_filter* qf1,
     struct qf_iterator qfi;
     qfi_start(qf1, &qfi);
     while (!qfi_done(qf1, &qfi)) {
-        qf_insert(qfout, qfi_next(qf1, &qfi));
+        qf_insert(qfout, qfi_next(qf1, &qfi), INT_MAX);
     }
     qfi_start(qf2, &qfi);
     while (!qfi_done(qf2, &qfi)) {
-        qf_insert(qfout, qfi_next(qf2, &qfi));
+        qf_insert(qfout, qfi_next(qf2, &qfi), INT_MAX);
     }
     return true;
 }

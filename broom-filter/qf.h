@@ -41,7 +41,7 @@ bool qf_init(struct quotient_filter* qf, uint32_t q, uint32_t r);
  *
  * Returns false if the QF is full.
  */
-bool qf_insert(struct quotient_filter* qf, uint64_t hash);
+bool qf_insert(struct quotient_filter* qf, uint64_t hash, int32_t scan_limit);
 
 /*
  * Returns true if the QF may contain the hash. Returns false otherwise.
