@@ -1,0 +1,15 @@
+outline:
+    - Intro
+        - AMQs in general
+        - Why adaptivity matters
+        - Early strategies for adaptivity
+    - Adaptive cuckoo filters
+        - Cuckoo filters
+        - Theoretical challenge
+        - Implementation results
+    - Broom filters
+        - Quotient filters
+        - High level details of the broom filter
+        - Theoretical foundations of broom filter
+        - Implementation attempt and impracticality of broom filter
+    - Future work/how to make other kinds of filters adaptive

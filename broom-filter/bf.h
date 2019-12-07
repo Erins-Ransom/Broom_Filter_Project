@@ -6,20 +6,9 @@
 #include "qf.h"
 #include "set.h"
 
-typedef struct adapt_bucket {
-    uint32_t size;
-    uint32_t bits;
-} adapt_bucket;
-
-typedef struct adapt_bits {
-    adapt_bucket* buckets;
-} adapt_bits;
-
 typedef struct broom_filter {
     struct quotient_filter* level_1;
     struct quotient_filter* level_2;
-    adapt_bucket* adaptivity_1;
-    adapt_bucket* adaptivity_2;
 
     int q1bits;
     int q2bits;

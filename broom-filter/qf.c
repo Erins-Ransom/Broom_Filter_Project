@@ -10,6 +10,15 @@
 
 #include "qf.h"
 
+static uint64_t prefix(uint64_t x, int n) {
+    return x >> (sizeof(uint64_t) * 8 - n);
+}
+
+// count leading ones
+static int clo(int v) {
+    return __builtin_clz(~v);
+}
+
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define LOW_MASK(n) ((1ULL << (n)) - 1ULL)
 
@@ -27,6 +36,7 @@ bool qf_init(struct quotient_filter* qf, uint32_t q, uint32_t r) {
     qf->qf_entries = 0;
     qf->qf_max_size = 1 << q;
     qf->qf_table = (uint64_t*) calloc(qf_table_size(q, r), 1);
+    qf->qf_adapt = calloc(sizeof(adapt_bucket), 1 << q);
     return qf->qf_table != NULL;
 }
 
@@ -177,7 +187,7 @@ static void insert_into(struct quotient_filter* qf, uint64_t s, uint64_t elt) {
     } while (!empty);
 }
 
-bool qf_insert(struct quotient_filter* qf, uint64_t hash, int32_t scan_limit) {
+bool qf_insert(struct quotient_filter* qf, Set* dict, uint64_t full_hash, uint64_t prefix_size, int32_t scan_limit) {
     if (qf->qf_entries >= qf->qf_max_size) {
         return false;
     }
@@ -238,7 +248,8 @@ bool qf_insert(struct quotient_filter* qf, uint64_t hash, int32_t scan_limit) {
     return true;
 }
 
-bool qf_may_contain(struct quotient_filter* qf, uint64_t hash, uint64_t* idx) {
+bool qf_may_contain(struct quotient_filter* qf, uint64_t full_hash, uint64_t prefix_size) {
+    uint64_t hash = prefix(full_hash, prefix_size);
     uint64_t fq = hash_to_quotient(qf, hash);
     uint64_t fr = hash_to_remainder(qf, hash);
     uint64_t T_fq = get_elem(qf, fq);
@@ -253,8 +264,12 @@ bool qf_may_contain(struct quotient_filter* qf, uint64_t hash, uint64_t* idx) {
     do {
         uint64_t rem = get_remainder(get_elem(qf, s));
         if (rem == fr) {
-            *idx = s;
-            return true;
+            uint64_t abits = qf->qf_adapt[s].bits;
+            int nbits = qf->qf_adapt[s].size;
+            int xnor = ~((full_hash << (prefix_size)) ^ abits);
+            if (clo(xnor) >= nbits) {
+                return true;
+            }
         } else if (rem > fr) {
             return false;
         }

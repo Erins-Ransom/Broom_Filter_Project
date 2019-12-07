@@ -3,3 +3,5 @@ a.out
 *.aux
 *.log
 writeup/*.pdf
+*.bbl
+*.blg

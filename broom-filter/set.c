@@ -47,6 +47,18 @@ int set_allocate(Set** s, int size) {
     return 0;
 }
 
+int set_get_prefix(Set* s, int pre) {
+    for (int b = 0; b < s->size; b++) {
+        SetNode* head = s->buckets[b];
+        while (head) {
+            for (int i = 0; i < head->size; i++) {
+
+            }
+            head = head->next;
+        }
+    }
+}
+
 int set_put(Set* s, int key) {
     size_t bucketn = hashfn(s->size, key);
     SetNode* head = s->buckets[bucketn];

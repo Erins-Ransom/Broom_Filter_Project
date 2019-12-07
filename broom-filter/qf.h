@@ -10,6 +10,13 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "set.h"
+
+typedef struct adapt_bucket {
+    uint32_t size;
+    uint32_t bits;
+} adapt_bucket;
+
 struct quotient_filter {
     uint8_t qf_qbits;
     uint8_t qf_rbits;
@@ -20,6 +27,7 @@ struct quotient_filter {
     uint64_t qf_elem_mask;
     uint64_t qf_max_size;
     uint64_t* qf_table;
+    adapt_bucket* qf_adapt;
 };
 
 struct qf_iterator {
@@ -42,12 +50,12 @@ bool qf_init(struct quotient_filter* qf, uint32_t q, uint32_t r);
  *
  * Returns false if the QF is full.
  */
-bool qf_insert(struct quotient_filter* qf, uint64_t hash, int32_t scan_limit);
+bool qf_insert(struct quotient_filter* qf, Set* dict, uint64_t full_hash, uint64_t prefix_size, int32_t scan_limit);
 
 /*
  * Returns true if the QF may contain the hash. Returns false otherwise.
  */
-bool qf_may_contain(struct quotient_filter* qf, uint64_t hash, uint64_t* idx);
+bool qf_may_contain(struct quotient_filter* qf, uint64_t hash, uint64_t full_hash);
 
 /*
  * Removes a hash from the QF.

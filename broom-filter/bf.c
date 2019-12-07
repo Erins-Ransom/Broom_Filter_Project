@@ -39,9 +39,6 @@ bool bf_init(broom_filter* bf, uint64_t n, double epsilon) {
     qf_init(bf->level_1, q1_size_log, bf->rbits);
     qf_init(bf->level_2, q2_size_log, bf->rbits);
 
-    bf->adaptivity_1 = calloc(q1_size, sizeof(adapt_bucket));
-    bf->adaptivity_2 = calloc(q2_size, sizeof(adapt_bucket));
-
     bf->q1bits = q1_size_log;
     bf->q2bits = q2_size_log;
 
@@ -54,16 +51,15 @@ bool bf_may_contain(broom_filter* bf, uint64_t x) {
     uint64_t hash = hashfn(x);
 
     uint64_t p = prefix(hash, bf->q1bits + bf->rbits);
-    uint64_t loc;
-    bool l1 = qf_may_contain(bf->level_1, p, &loc);
+    bool l1 = qf_may_contain(bf->level_1, p, hash);
     if (l1) {
-        int nbits = bf->adaptivity_1[loc].size;
-        uint32_t adapt_bits = bf->adaptivity_1[loc].bits;
+        /* int nbits = bf->adaptivity_1[loc].size; */
+        /* uint32_t adapt_bits = bf->adaptivity_1[loc].bits; */
         // TODO
     }
     if (!l1) {
         p = prefix(hash, bf->q2bits + bf->rbits);
-        bool l2 = qf_may_contain(bf->level_2, p);
+        /* bool l2 = qf_may_contain(bf->level_2, p); */
     }
     return l1;
 }
