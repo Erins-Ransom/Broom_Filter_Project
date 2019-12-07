@@ -1,5 +1,8 @@
 all:
-	pdflatex *.tex
+	pdflatex writeup.tex
+	bibtex writeup
+	pdflatex writeup.tex
+	pdflatex writeup.tex
 
 clean:
 	rm -f *.pdf

@@ -1,6 +1,6 @@
 \title{Broom Filters in Practice}
 \author{
-        Eric Knorr, Zachary Yedidia, Richard Xu\\
+        Eric Knorr, Richard Xu, Zachary Yedidia \\ % alphabetical order by last name
         \\
         CS 223\\
 }
@@ -20,23 +20,37 @@
 \maketitle
 
 \begin{abstract}
+	Bloom filters and other approximate membership query data structures, or AMQs, are often used to help avoid costly lookups to large dictionaries.  They achieve this by keeping a small, probabilistic representation of a set {\bf S} of keys from a universe {\bf U}.  All AMQs support inserts and lookups while some also support deletes.  When performing a lookup for an item $x$ that has been inserted, i.e. $x\in {\bf S}$, the AMQ will always return {\it true}.  The downside of their compact representation of {\bf S} is that, when a lookup is performed for an item $x \notin {\bf S}$, {\it true} may be returned with probability $\epsilon$.  This {\bf false-positive probability} is a usually a tunable parameter with a lower $\epsilon$ typically requiring more space to be used by the AMQ.  That said, their compact representation is also what makes them helpful since they can be kept in memory or on a local machine and queried locally to avoid having to access disk or another machine over a network.  This being the case, two of the primary concerns when analyzing an AMQ are then, how often does it return false-positives and how much space does it require to do so?
+
+	The majority of current AMQs offer strong guarantees for individual queries; however, the false-positive probability rates for most can be pushed toward 1 given the right sequence of queries.  There are some recent AMQs that have been designed to account for this shortcoming, we call these {\bf adaptive} AMQs in that they maintain a false-positive probability of $\epsilon$ for every lookup regardless of the answers to previous lookups.
+
+	The goal of this project is to implement a proveably adaptive AMQ.  We need to add more here about what we are trying to accomplish...
 \end{abstract}
 
 \section{Introduction}
+	Bloom filters and other approximate membership query data structures, or AMQs, are often used to help avoid costly lookups to large dictionaries.  They achieve this by keeping a small, probabilistic representation of a set {\bf S} of keys from a universe {\bf U}.  All support inserts and lookups while some also support deletes.  When performing a lookup for an item $x$ that has been inserted, i.e. $x\in {\bf S}$, the AMQ will always return {\it true}.  The downside of their compact representation of {\bf S} is that, when a lookup is performed for an item $x \notin {\bf S}$, {\it true} may be returned with probability $\epsilon$.  This {\bf false-positive probability} is a usually a tunable parameter with a lower $\epsilon$ typically requiring more space to be used by the AMQ.  That said, their compact representation is also what makes them helpful since they can be kept in memory or on a local machine and queried locally to avoid having to access disk or another machine over a network.  As such, two of the primary concerns when analyzing an AMQ are then, how often does it return false-positives and how much space does it require to do so?
+
+	The majority of current AMQs only offer strong guarantees for individual queries, but the false-positive probability rate for most of these can be pushed toward 1 given the right sequence of queries.  In the adversarial case, this can be done by repeated lookups of elements that result in false-positives, but, even in regular workloads, the lack of strong guarantees for sequences of lookups can lead to poor performance depending on the circumstances.  For example, Mitzenmacher et al. \cite{adaptive-cuckoo} discuss how repeated lookups can arise during packet processing because the lookups may correspond to flow identifiers.  Their solution to this problem was to create variant of the Cuckoo Filter \cite{cuckoo-filter} which adapts to false positives by removing them for future queries and show using simulations that this does indeed result in a better false positive rate under such circumstances.  Bender et al. \cite{broom-filter} take a similar approach in designing the Broom Filter which is a variant of the Quotient Filter \cite{quotient-filter} that also adapts to false positives, but rather than showing their advantages through simulations, they define an {\bf adaptive} AMQ as one that maintains a false-positive probability of $\epsilon$ for each query regardless of the answers to previous queries and show that the Broom Filter is proveably adaptive.
+	
+	Given a proveably adaptive AMQ, we have set out to try and put these strong guarantees use.  Describe stuff about what we do here ...
 
 \section{Related Work}
-
+We can go into some more details here about the adaptive cuckoo filter as well as some of the other stuff
 \section{Theoretical Foundations}
-
+I can expand on the design and proofs in the Broom Filter paper here.  
 \section{Methods}
-
+I assume we will describe our implementation here as well as our simulations. 
 \section{Results}
 
 \section{Conclusion}
 
-\begin{thebibliography}{10}
-    \raggedright
-\end{thebibliography}
+% I setup a bib file
+\bibliography{works_cited}
+\bibliographystyle{unsrt}
+
+%\begin{thebibliography}{10}
+%    \raggedright
+%\end{thebibliography}
 
 \end{document}
 
