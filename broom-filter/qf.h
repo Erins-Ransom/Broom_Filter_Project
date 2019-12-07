@@ -8,6 +8,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 struct quotient_filter {
     uint8_t qf_qbits;
@@ -46,7 +47,7 @@ bool qf_insert(struct quotient_filter* qf, uint64_t hash, int32_t scan_limit);
 /*
  * Returns true if the QF may contain the hash. Returns false otherwise.
  */
-bool qf_may_contain(struct quotient_filter* qf, uint64_t hash);
+bool qf_may_contain(struct quotient_filter* qf, uint64_t hash, uint64_t* idx);
 
 /*
  * Removes a hash from the QF.

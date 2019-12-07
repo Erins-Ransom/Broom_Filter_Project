@@ -238,7 +238,7 @@ bool qf_insert(struct quotient_filter* qf, uint64_t hash, int32_t scan_limit) {
     return true;
 }
 
-bool qf_may_contain(struct quotient_filter* qf, uint64_t hash) {
+bool qf_may_contain(struct quotient_filter* qf, uint64_t hash, uint64_t* idx) {
     uint64_t fq = hash_to_quotient(qf, hash);
     uint64_t fr = hash_to_remainder(qf, hash);
     uint64_t T_fq = get_elem(qf, fq);
@@ -253,6 +253,7 @@ bool qf_may_contain(struct quotient_filter* qf, uint64_t hash) {
     do {
         uint64_t rem = get_remainder(get_elem(qf, s));
         if (rem == fr) {
+            *idx = s;
             return true;
         } else if (rem > fr) {
             return false;
