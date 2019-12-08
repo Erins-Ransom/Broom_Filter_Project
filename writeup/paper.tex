@@ -21,12 +21,37 @@
 \maketitle
 
 \begin{abstract}
-	Bloom filters and other approximate membership query data structures, or AMQs, are often used to help avoid costly lookups to large dictionaries.  They achieve this by keeping a small, probabilistic representation of a set {\bf S} of keys from a universe {\bf U}.  All AMQs support inserts and lookups while some also support deletes.  When performing a lookup for an item $x$ that has been inserted, i.e. $x\in {\bf S}$, the AMQ will always return {\it true}.  The downside of their compact representation of {\bf S} is that, when a lookup is performed for an item $x \notin {\bf S}$, {\it true} may be returned with probability $\epsilon$.  This {\bf false-positive probability} is a usually a tunable parameter with a lower $\epsilon$ typically requiring more space to be used by the AMQ.  That said, their compact representation is also what makes them helpful since they can be kept in memory or on a local machine and queried locally to avoid having to access disk or another machine over a network.  This being the case, two of the primary concerns when analyzing an AMQ are then, how often does it return false-positives and how much space does it require to do so?
+    Bloom filters and other approximate membership query data structures, or
+    AMQs, are often used to help avoid costly lookups to large dictionaries.
+    They achieve this by keeping a small, probabilistic representation of a set
+    {\bf S} of keys from a universe {\bf U}.  All AMQs support inserts and
+    lookups while some also support deletes.  When performing a lookup for an
+    item $x$ that has been inserted, i.e. $x\in {\bf S}$, the AMQ will always
+    return {\it present}.  The downside of their compact representation of {\bf S}
+    is that, when a lookup is performed for an item $x \notin {\bf S}$, {\it
+    present} may be returned with probability $\epsilon$.  This {\bf
+    false-positive probability} is a usually a tunable parameter with a lower
+    $\epsilon$ typically requiring more space to be used by the AMQ.  That
+    said, their compact representation is also what makes them helpful since
+    they can be kept in memory or on a local machine and queried locally to
+    avoid having to access disk or another machine over a network. 
+    Two of the primary concerns when analyzing an AMQ are then, how
+    often does it return false-positives and how much space does it require to
+    do so?
 
-	The majority of current AMQs offer strong guarantees for individual queries; however, the false-positive probability rates for most can be pushed toward 1 given the right sequence of queries.  There are some recent AMQs that have been designed to account for this shortcoming, we call these {\bf adaptive} AMQs in that they maintain a false-positive probability of $\epsilon$ for every lookup regardless of the answers to previous lookups.
+    The majority of current AMQs offer strong guarantees for individual
+    queries; however, the false-positive probability rates for most can be
+    pushed toward 1 given the right sequence of non-independent queries.  Some recent
+    AMQs have been designed to account for this shortcoming. We call these
+    {\bf adaptive} AMQs because they maintain a false-positive probability of
+    $\epsilon$ for every lookup regardless of the answers to previous lookups (adapting
+    their internal representation whenever a mistake is made so that it will be corrected
+    in the future).
 
-	The goal of this project is to implement a proveably adaptive AMQ.  We need to add more here about what we are trying to accomplish...
-\end{abstract}
+    We provide a survey of techniques used for creating adaptive AMQs, comparing and
+    contrasting existing implementations, and discussing the tradeoff between practicality
+    and ease of analysis.
+    \end{abstract}
 
 \section{Introduction}
 
@@ -53,12 +78,9 @@
 \subfile{sections/future_work}
 
 % I setup a bib file
-\bibliography{works_cited}
-\bibliographystyle{unsrt}
+\bibliography{works_cited} \bibliographystyle{unsrt}
 
-%\begin{thebibliography}{10}
-%    \raggedright
-%\end{thebibliography}
+%\begin{thebibliography}{10} \raggedright \end{thebibliography}
 
 \end{document}
 

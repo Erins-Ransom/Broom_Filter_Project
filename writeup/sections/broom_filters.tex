@@ -1,13 +1,69 @@
 \documentclass[../paper.tex]{subfiles}
 \begin{document}
-	Bender et al. \cite{broom-filter} take a somewhat different approach to the problem of adaptivity, though their design has has similarities to the Adaptive Cuckoo Filter.  They start by defining that an AMQ is {\bf adaptive} if its false-positive probability holds true for every lookup regardless of the answers to all previous lookups.  They then present the Broom Filter, thus named because it cleans up after itself, and show that it is proveably adaptive.  The Broom Filter is an adaptation of an earlier AMQ called the Quotient Filter \cite{quotient-filter} which, like the Adaptive Cuckoo Filter, consists of both a local representation and a remote representation which is only ever accessed in tandem with the underlying dictionary.   They in fact show that any adaptive AMQ must have such a structure if the local representation is to be optimally sized.  Seeking to take advantage of such strong guarantees, we set out to implement a Broom Filter but found several hurtles that would need to be overcome.  
+    Bender et al. \cite{broom-filter} take a somewhat different approach to the
+    problem of adaptivity, though their design has has similarities to the
+    Adaptive Cuckoo Filter.  They start by defining that an AMQ is {\bf
+    adaptive} if its false-positive probability holds true for every lookup
+    regardless of the answers to all previous lookups.  They then present the
+    Broom Filter, thus named because it cleans up after itself, and show that
+    it is proveably adaptive.  The Broom Filter is an adaptation of an earlier
+    AMQ called the Quotient Filter \cite{quotient-filter} which, like the
+    Adaptive Cuckoo Filter, consists of both a local representation and a
+    remote representation which is only ever accessed in tandem with the
+    underlying dictionary.   They in fact show that any adaptive AMQ must have
+    such a structure if the local representation is to be optimally sized.
+    Seeking to take advantage of such strong guarantees, we set out to
+    implement a Broom Filter but found several hurtles that would need to be
+    overcome.  
 	
 \subsection{The Quotient Filter}
-	Understanding the broom filter will first require a description of the Quotient Filter, which is its non-adaptive version.   Unlike your standard Bloom filter which uses multiple hash functions and flips bits in table for each inserted element, the Quotient Filter uses a single hash function and stores a fingerprint for each inserted element.  The fingerprint for an element $x$ is a prefix of the hash $h(x)$ and is stored as two separate pieces, the {\bf quotient} and the {\bf remainder}.  The quotient consists of the first $q = log(n)$ bits of $h(x)$ while the remainder consists of the following $r = log(1/\epsilon)$ bits.  The filter has a table of $O(n)$ buckets of size $log(1/\epsilon)$ and when a element is added, its remainder is stored in the table at the position indexed by its quotient.  When collisions occur, they are resolved using linear probing, but two invariant are maintained: {\bf 1)} all remainders with the same quotient are stored contiguously in a {\bf run}, wrapping around to the beginning if necessary, and {\bf 2)} that if remainder $a$ is stored before remainder $b$ then the quotient of $a$ is less than or equal to the quotient of $b$ modulo the wrapping.  
 
-	To ensure that any fingerprint can be decode some additional information is needed.   For this reason, three metadata bits are stored at the beginning of each remainder to encode whether a bucket is occupied, whether it has been shifted and whether it is part of a run.  Whenever a remainder is added, the is occupied bit for its intended bucket is always set to 1.  If a remainder is not stored in its intended bucket, then the is shifted bit of the bucket it is stored in is set to 1.  If the bucket has the same intended bucket as the one before, part of a run bit is set 1.  When we perform a lookup for element $x$, we check the bucket indexed by the first $q$ bits of $h(x)$.  If the is occupied bit is 0, we immediately return $false$; otherwise, if the is shifted bit is 0, we check the remainder being looked up against all remainders in the run and return $true$ if we find a match and $false$ if not.  If the is shifted bit is 1, then we must first find the beginning of the {\bf cluster}, a group of runs with now empty buckets between them, and then scan forward keeping track of the number of runs and the number of occupied buckets to determine the location of our target run.  If we reach the end of the cluster without finding it, then we return $false$, but if we do find the run, we compare to the remainders in that run and return $true$ or $false$ accordingly.  Deletes can be performed by looking up the corresponding remainder (of which their may be multiple) and removing it and then shifting other remainders and updating metadata bits as needed.  A false positive thus occurs if $h(x) = h(y)$ when $x \in S$ and $y \notin S$.  Assuming $h: {\bf U} \rightarrow \{0, ... , 2^{q+r}-1\}$ generates outputs that are distributed uniformly and independently, then the probability of a false positive is given by 
-	$$ 1 - \big(1 - \frac{1}{2^{q+r}}\big)^n \approx 1- e^{-n/(q+r)} \leq \frac{n}{2^{(q+p)}} \leq \frac{2^q}{2^{(q+r)}} \leq 2^{-r} = \epsilon .$$
-Thus, the quotient filter achieves a false-positive probability of $\epsilon$ while using $O(n \log (1/\epsilon))$ space.  	
+    Understanding the broom filter will first
+    require a description of the Quotient Filter, which is its non-adaptive
+    version.   Unlike your standard Bloom filter which uses multiple hash functions
+    and flips bits in table for each inserted element, the Quotient Filter uses a
+    single hash function and stores a fingerprint for each inserted element.  The
+    fingerprint for an element $x$ is a prefix of the hash $h(x)$ and is stored as
+    two separate pieces, the {\bf quotient} and the {\bf remainder}.  The quotient
+    consists of the first $q = log(n)$ bits of $h(x)$ while the remainder consists
+    of the following $r = log(1/\epsilon)$ bits.  The filter has a table of $O(n)$
+    buckets of size $log(1/\epsilon)$ and when a element is added, its remainder is
+    stored in the table at the position indexed by its quotient.  When collisions
+    occur, they are resolved using linear probing, but two invariant are
+    maintained: {\bf 1)} all remainders with the same quotient are stored
+    contiguously in a {\bf run}, wrapping around to the beginning if necessary, and
+    {\bf 2)} that if remainder $a$ is stored before remainder $b$ then the quotient
+    of $a$ is less than or equal to the quotient of $b$ modulo the wrapping.  
+
+    To ensure that any fingerprint can be decode some additional information is
+    needed.   For this reason, three metadata bits are stored at the beginning
+    of each remainder to encode whether a bucket is occupied, whether it has
+    been shifted and whether it is part of a run.  Whenever a remainder is
+    added, the is occupied bit for its intended bucket is always set to 1.  If
+    a remainder is not stored in its intended bucket, then the is shifted bit
+    of the bucket it is stored in is set to 1.  If the bucket has the same
+    intended bucket as the one before, part of a run bit is set 1.  When we
+    perform a lookup for element $x$, we check the bucket indexed by the first
+    $q$ bits of $h(x)$.  If the is occupied bit is 0, we immediately return
+    $false$; otherwise, if the is shifted bit is 0, we check the remainder
+    being looked up against all remainders in the run and return $true$ if we
+    find a match and $false$ if not.  If the is shifted bit is 1, then we must
+    first find the beginning of the {\bf cluster}, a group of runs with now
+    empty buckets between them, and then scan forward keeping track of the
+    number of runs and the number of occupied buckets to determine the location
+    of our target run.  If we reach the end of the cluster without finding it,
+    then we return $false$, but if we do find the run, we compare to the
+    remainders in that run and return $true$ or $false$ accordingly.  Deletes
+    can be performed by looking up the corresponding remainder (of which their
+    may be multiple) and removing it and then shifting other remainders and
+    updating metadata bits as needed.  A false positive thus occurs if $h(x) =
+    h(y)$ when $x \in S$ and $y \notin S$.  Assuming $h: {\bf U} \rightarrow
+    \{0, ... , 2^{q+r}-1\}$ generates outputs that are distributed uniformly
+    and independently, then the probability of a false positive is given by $$
+    1 - \big(1 - \frac{1}{2^{q+r}}\big)^n \approx 1- e^{-n/(q+r)} \leq
+    \frac{n}{2^{(q+p)}} \leq \frac{2^q}{2^{(q+r)}} \leq 2^{-r} = \epsilon .$$
+    Thus, the quotient filter achieves a false-positive probability of
+    $\epsilon$ while using $O(n \log (1/\epsilon))$ space.  	
 
 \subsection{Adding Adaptivity}
 	
