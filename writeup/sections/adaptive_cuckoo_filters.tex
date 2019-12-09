@@ -2,28 +2,40 @@
 \begin{document}
 \newcommand{\on}{\operatorname}
 To better understand the properties of the Broom filter, we compare it to the adaptive cuckoo filter.
-The \emph{adaptive cuckoo filter} \cite{adaptive-cuckoo} is a practical solution to the AMQ problem with adaptivity, combining a Cuckoo filter and Cuckoo hash table.
+The \emph{adaptive cuckoo filter} \cite{adaptive-cuckoo} is a practical solution to the AMQ problem with adaptivity, combining a cuckoo filter and cuckoo hash table.
 
-A Cuckoo hash table stores its entries in an array of length $n$ and uses two hash functions $h_1,h_2:U\to \{0,\ldots,n-1\}$ \cite{prob-textbook}.
-When inserting an item $x$, we compute both $h_1(x)$ and $h_2(x)$. If any one of the two slots are empty, we insert $x$ into that slot.
+\subsection{Cuckoo Hashing}
+A cuckoo hash table stores its entries in an array of length $n$ and uses two hash functions $h_1,h_2:U\to \{0,\ldots,n-1\}$ \cite{prob-textbook}.
+Each entry in the array is known as a \emph{bucket}, and in this case the bucket can store one element. When inserting an item $x$, we compute both $h_1(x)$ and $h_2(x)$. If any one of the two slots are empty, we insert $x$ into that slot.
 Otherwise, we pick one of the two slots at random. Suppose that slot stores the item $y$. Then, we evict $y$, insert $x$ into that location,
 and proceed to insert $y$ back into the table. To find an element's location, we only need to check the results of the two hashes.
 Cuckoo hashing presents worst case $O(1)$ lookup time and amortized $O(1)$ insertion time, as long as the length of the array is some constant factor $c$ longer
 than the number of elements. It is an example of the Power of Two Choices in action.
 
-The Cuckoo filter \cite{cuckoo-filter}, first proposed by Fan, Andersen, Kaminsky and Mitzenmacher, is a high speed data structure that can answer approximte membership queries while supporting deletions.
-The filter uses a similar strategy as the Cuckoo hash table. We maintain an array and for each element $x\in S$, we store a fingerprint of $x$ in either of the two locations. False positives only occur when one element shares the same hash and fingerprint of another. Then, we can decrease false positive probability $\epsilon$ using extra space by increasing the length of the fingerprint.
+The cuckoo filter \cite{cuckoo-filter}, first proposed by Fan, Andersen, Kaminsky and Mitzenmacher, is a high speed data structure that can answer approximte membership queries while supporting deletions.
+The filter uses a similar strategy as the cuckoo hash table. We maintain an array and for each element $x\in S$, we store a fingerprint of $x$ in either of the two locations. False positives only occur when one element shares the same hash and fingerprint of another. Then, we can decrease false positive probability $\epsilon$ using extra space by increasing the length of the fingerprint.
 
 One challenge of constructing the cuckoo filter comes from us not having access to the original element. When we try to evict an element $x$, only the fingerprint
-is stored in the Cuckoo filter, but we need to calculate the other location the element can be hashed into. Fan et.\ al solves the problem by linking the two hash functions by setting \begin{align*}
+is stored in the cuckoo filter, but we need to calculate the other location the element can be hashed into. Fan et.\ al solves the problem using a technique known as \emph{partial-key cuckoo hashing}.
+The two hash functions are linked using \begin{align*}
     h_1(x)&=\on{hash}(x), \\ h_2(x)&=h_1(x)\oplus \on{hash}(x\text{'s fingerprint}).
 \end{align*} Then, the two hashes can be calculated for each other by taking the XOR of each hash with $\on{hash}(x\text{'s fingerprint})$.
 
 The filter supports deletion of elements by removing their fingerprint from the original bucket. The filter is more space efficient than the Bloom filter when the false-positive rate $\epsilon$ is relatively small (less than $3\%$), and continues to perform even when the load is above $90\%$.
+Fan et. al generalized the filter to include multiple slots per bucket
 
-The adaptive cuckoo filter \cite{adaptive-cuckoo} can answer approximate membership queries while adapting to false positives. The filter combines a Cuckoo filter and a Cuckoo hash table. In a common application of the filter, such as in a dictionary lookup, we can store the Cuckoo hash table remotely since it is only used when adapting to false positives.
+\subsection{Adaptive Cuckoo Filter}
+The adaptive cuckoo filter \cite{adaptive-cuckoo} can answer approximate membership queries while adapting to false positives. The filter combines a Cuckoo filter and a Cuckoo hash table,
+which share the same hash functions $h_1,h_2$ and the same length. The size of a bucket is much smaller in the filter, since it only stores the fingerprint plus some additional bits for adaptivity.
+To use the framework presented by Bender et. al \cite{broom-filter}, the cuckoo hash table is stored remotely since it is only used when adapting to false positives.
 
-Additionally, we have a family of hash functions denoted by $f_\alpha$, with $\alpha$ starting at 0.
+The filter and the table satisfy the following invariant: for each element $x$ in the hash table, $x$'s fingerprint is stored in the same location in the Cuckoo filter.
+
+\textbf{Insertions and Deletions:} To insert an element into an adaptive cuckoo filter, insert the element into both the cuckoo filter and the cuckoo hash table. We do not use partial-key cuckoo hashing because
+the insertion operation can retrieve the whole element from the cuckoo hash table. Since the two structures use the same hash function, the element will be inserted into the same location.
+
+\textbf{Adapting:} A false positive occurs when an element not in $S$ shares the same hash and the same fingerprint as an element in $S$. This is detected at the time when we retrieve the element from the
+Cuckoo hash table. 
 
 % Finishing adaptive but thought I'd first push.
 % Will edit the first paragraph. I find the reason this is difficult is that it's all Mitzenmacher's work.
