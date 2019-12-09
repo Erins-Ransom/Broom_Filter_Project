@@ -1,32 +1,195 @@
 \documentclass[../paper.tex]{subfiles}
-\begin{document}
-	Bender et al. \cite{broom-filter} take a somewhat different approach to the problem of adaptivity, though their design has has similarities to the Adaptive Cuckoo Filter.  They start by defining that an AMQ is {\bf adaptive} if its false-positive probability holds true for every lookup regardless of the answers to all previous lookups.  They then present the Broom Filter, thus named because it cleans up after itself, and show that it is proveably adaptive.  The Broom Filter is an adaptation of an earlier AMQ called the Quotient Filter \cite{quotient-filter} which, like the Adaptive Cuckoo Filter, consists of both a local representation and a remote representation which is only ever accessed in tandem with the underlying dictionary.   They in fact show that any adaptive AMQ must have such a structure if the local representation is to be optimally sized.  Seeking to take advantage of such strong guarantees, we set out to implement a Broom Filter but found several hurtles that would need to be overcome.  
-	
-\subsection{The Quotient Filter}
-	To understand how the broom filter functions will first require a description of the Quotient Filter from which it was designed.   Unlike your standard Bloom filter which uses multiple hash functions and flips bits in table for each inserted element, the Quotient Filter uses a single hash function and stores a fingerprint for each inserted element.  The fingerprint for an element $x$ is a prefix of the hash $h(x)$ and is stored as two separate pieces, the {\bf quotient} and the {\bf remainder}.  The quotient consists of the first $q = log(n)$ bits of $h(x)$ while the remainder consists of the following $r = log(1/\epsilon)$ bits.  The filter has a table of $O(n)$ buckets of size $log(1/\epsilon)$ and when a element is added, its remainder is stored in the table at the position indexed by its quotient.  When collisions occur, they are resolved using linear probing, but two invariant are maintained: {\bf 1)} all remainders with the same quotient are stored contiguously in a {\bf run}, wrapping around to the beginning if necessary, and {\bf 2)} that if remainder $a$ is stored before remainder $b$ then the quotient of $a$ is less than or equal to the quotient of $b$ modulo the wrapping.  
 
-	To ensure that any fingerprint can be decode some additional information is needed.   For this reason, three metadata bits are stored at the beginning of each remainder to encode whether a bucket is occupied, whether it has been shifted and whether it is part of a run.  Whenever a remainder is added, the is occupied bit for its intended bucket is always set to 1.  If a remainder is not stored in its intended bucket, then the is shifted bit of the bucket it is stored in is set to 1.  If the bucket has the same intended bucket as the one before, part of a run bit is set 1.  When we perform a lookup for element $x$, we check the bucket indexed by the first $q$ bits of $h(x)$.  If the is occupied bit is 0, we immediately return $false$; otherwise, if the is shifted bit is 0, we check the remainder being looked up against all remainders in the run and return $true$ if we find a match and $false$ if not.  If the is shifted bit is 1, then we must first find the beginning of the {\bf cluster}, a group of runs with now empty buckets between them, and then scan forward keeping track of the number of runs and the number of occupied buckets to determine the location of our target run.  If we reach the end of the cluster without finding it, then we return $false$, but if we do find the run, we compare to the remainders in that run and return $true$ or $false$ accordingly.  Deletes can be performed by looking up the corresponding remainder (of which their may be multiple) and removing it and then shifting other remainders and updating metadata bits as needed.  A false positive thus occurs if $h(x) = h(y)$ when $x \in S$ and $y \notin S$.  Assuming $h: {\bf U} \rightarrow \{0, ... , 2^{q+r}-1\}$ generates outputs that are distributed uniformly and independently, then the probability of a false positive is given by 
-	$$ 1 - \big(1 - \frac{1}{2^{q+r}}\big)^n \approx 1- e^{-n/(q+r)} \leq \frac{n}{2^{(q+p)}} \leq \frac{2^q}{2^{(q+r)}} \leq 2^{-r} = \epsilon .$$
-Thus, the quotient filter achieves a false-positive probability of $\epsilon$ while using $O(n \log (1/\epsilon))$ space.  	
+\begin{document} Bender et al.
 
-\subsection{Adding Adaptivity}
-	Now that we have a better understanding of the original data structure, we will now discuss how it was modified to achieve adaptivity.  As mentioned before, one difference between the Broom Filter and the Quotient Filter is that the Broom Filter has both a local and remote representation.  The local is a fully functioning AMQ on its own, but the remote gives the local additional information which is required for it to adapt to false positives.  Specifically, whenever there is a false-positive caused by some element $x \notin S$, the job of the remote is to provide the element $y \in S$ that caused the false-positive, this way the fingerprint for $y$ can be modified in the local representation so that future lookups for $x$ will no longer result in false positives.  The specific implementation of the remote is not detailed other than that it can be done using standard data structures.  Needing to access a remote portion of the filter may seem counter intuitive given that AMQs are designed to avoid remote lookups, but the cost of accessing the remote portion is amortized by the fact that it is only ever accessed when the underlying dictionary already needs to be accessed: for inserts/deletes and whenever there is a false-positive.  Due to this, the accesses to the remote portion are essentially free asymptotically.
+\cite{broom-filter} introduce a different adaptive filter, called the "broom filter"
+(because it cleans up after itself). They make two key contributions to the
+field of adaptive filters: describing the broom filter data structure itself,
+as well as formalizing the idea of adaptivity and providing proofs regarding the guaratees
+of the broom filter, and adaptive AMQs in general. The broom filter builds on
+a previous AMQ called the quotient filter \cite{quotient-filter}, and, like the adaptive
+cuckoo filter, consists of both a local and remote representation. In fact, one
+of the main theoretical results they obtain shows that any adaptive AMQ must use
+some remote (larger) storage in order to maintain adaptivity. Unfortunately, from
+our experience the broom filter is quite impractical. Even a naive implementation
+would be cumbersome and time-consuming to write, and important details such as
+how adaptivity bits can be stored and maintained efficiently are left out.
+
+\subsection{The Quotient Filter} To understand how the broom filter functions
+will first require a description of the Quotient Filter from which it was
+designed.   Unlike your standard Bloom filter which uses multiple hash
+functions and flips bits in table for each inserted element, the Quotient
+Filter uses a single hash function and stores a fingerprint for each inserted
+element.  The fingerprint for an element $x$ is a prefix of the hash $h(x)$ and
+is stored as two separate pieces, the {\bf quotient} and the {\bf remainder}.
+The quotient consists of the first $q = log(n)$ bits of $h(x)$ while the
+remainder consists of the following $r = log(1/\epsilon)$ bits.  The filter has
+a table of $O(n)$ buckets of size $log(1/\epsilon)$ and when a element is
+added, its remainder is stored in the table at the position indexed by its
+quotient.  When collisions occur, they are resolved using linear probing, but
+two invariant are maintained: {\bf 1)} all remainders with the same quotient
+are stored contiguously in a {\bf run}, wrapping around to the beginning if
+necessary, and {\bf 2)} that if remainder $a$ is stored before remainder $b$
+then the quotient of $a$ is less than or equal to the quotient of $b$ modulo
+the wrapping.  
+
+    To ensure that any fingerprint can be decode some additional information is
+    needed.   For this reason, three metadata bits are stored at the beginning
+    of each remainder to encode whether a bucket is occupied, whether it has
+    been shifted and whether it is part of a run.  Whenever a remainder is
+    added, the is occupied bit for its intended bucket is always set to 1.  If
+    a remainder is not stored in its intended bucket, then the is shifted bit
+    of the bucket it is stored in is set to 1.  If the bucket has the same
+    intended bucket as the one before, part of a run bit is set 1.  When we
+    perform a lookup for element $x$, we check the bucket indexed by the first
+    $q$ bits of $h(x)$.  If the is occupied bit is 0, we immediately return
+    $false$; otherwise, if the is shifted bit is 0, we check the remainder
+    being looked up against all remainders in the run and return $true$ if we
+    find a match and $false$ if not.  If the is shifted bit is 1, then we must
+    first find the beginning of the {\bf cluster}, a group of runs with now
+    empty buckets between them, and then scan forward keeping track of the
+    number of runs and the number of occupied buckets to determine the location
+    of our target run.  If we reach the end of the cluster without finding it,
+    then we return $false$, but if we do find the run, we compare to the
+    remainders in that run and return $true$ or $false$ accordingly.  Deletes
+    can be performed by looking up the corresponding remainder (of which their
+    may be multiple) and removing it and then shifting other remainders and
+    updating metadata bits as needed.  A false positive thus occurs if $h(x) =
+    h(y)$ when $x \in S$ and $y \notin S$.  Assuming $h: {\bf U} \rightarrow
+    \{0, ... , 2^{q+r}-1\}$ generates outputs that are distributed uniformly
+    and independently, then the probability of a false positive is given by $$
+    1 - \big(1 - \frac{1}{2^{q+r}}\big)^n \approx 1- e^{-n/(q+r)} \leq
+    \frac{n}{2^{(q+p)}} \leq \frac{2^q}{2^{(q+r)}} \leq 2^{-r} = \epsilon .$$
+    Thus, the quotient filter achieves a false-positive probability of
+    $\epsilon$ while using $O(n \log (1/\epsilon))$ space.  	
+
+\subsection{Adding Adaptivity} Now that we have a better understanding of the
+original data structure, we will now discuss how it was modified to achieve
+adaptivity.  As mentioned before, one difference between the Broom Filter and
+the Quotient Filter is that the Broom Filter has both a local and remote
+representation.  The local is a fully functioning AMQ on its own, but the
+remote gives the local additional information which is required for it to adapt
+to false positives.  Specifically, whenever there is a false-positive caused by
+some element $x \notin S$, the job of the remote is to provide the element $y
+\in S$ that caused the false-positive, this way the fingerprint for $y$ can be
+modified in the local representation so that future lookups for $x$ will no
+longer result in false positives.  The specific implementation of the remote is
+not detailed other than that it can be done using standard data structures.
+Needing to access a remote portion of the filter may seem counter intuitive
+given that AMQs are designed to avoid remote lookups, but the cost of accessing
+the remote portion is amortized by the fact that it is only ever accessed when
+the underlying dictionary already needs to be accessed: for inserts/deletes and
+whenever there is a false-positive.  Due to this, the accesses to the remote
+portion are essentially free asymptotically.
 	
-	Now to how the local representation differs.  There are actually two different designs for the local representation depending on the size of the remainders, $\log(1/\epsilon)$, both of which make use of two levels.   In the {\bf small remainder} case were $r \leq 2 \log\log n$, both levels resemble Quotient filters with independent hash functions.  In the {\bf  large remainder} case, were $ r > 2 \log\log n$, then only a single hash function is used and the relationship between the two levels has to do with backyard hashing \cite{backyard-hashing}.  Most of these changes from the original Quotient Filter are in order to improve lookup and insert performance, so we will not go into as much detail on them and instead focus on the changes that enable adaptivity.  In both cases, this is achieved through the use of {\bf adaptivity bits} which are stored separately from the rest of the structure.  Both also make use of hash functions of the type $h : {\bf U} \rightarrow \{0, ..., n^c\}$ for some constant $c \geq 4$.  In the small remainder case, these are maintained separately for each level, and in the large remainder case they are maintained for the whole structure.  Suffice to say, both representations require $O(n\log(1/\epsilon)$ space as well as $O(n)$ space for the adaptivity bits.  
+    Now to how the local representation differs.  There are actually two
+    different designs for the local representation depending on the size of the
+    remainders, $\log(1/\epsilon)$, both of which make use of two levels.   In
+    the {\bf small remainder} case were $r \leq 2 \log\log n$, both levels
+    resemble Quotient filters with independent hash functions.  In the {\bf
+    large remainder} case, were $ r > 2 \log\log n$, then only a single hash
+    function is used and the relationship between the two levels has to do with
+    backyard hashing \cite{backyard-hashing}.  Most of these changes from the
+    original Quotient Filter are in order to improve lookup and insert
+    performance, so we will not go into as much detail on them and instead
+    focus on the changes that enable adaptivity.  In both cases, this is
+    achieved through the use of {\bf adaptivity bits} which are stored
+    separately from the rest of the structure.  Both also make use of hash
+    functions of the type $h : {\bf U} \rightarrow \{0, ..., n^c\}$ for some
+    constant $c \geq 4$.  In the small remainder case, these are maintained
+    separately for each level, and in the large remainder case they are
+    maintained for the whole structure.  Suffice to say, both representations
+    require $O(n\log(1/\epsilon)$ space as well as $O(n)$ space for the
+    adaptivity bits.  
 	
-	What the adaptivity bits are is an extention of the {\bf base fingerprint} which is comprised of the first $q + r$ bits of the hash.  So if a fingerprint has $a$ adaptivity bits, the fingerprint is a prefix of the respective hash with length $q + r + a$. The adaptivity bits do not have a fixed length and may vary between fingerprints while some fingerprints may not have any.  Adaptivity bits may be added to a fingerprint in two cases: {\bf 1)} when a fingerprint is added to the Broom Filter and {\bf 2)} when a false-positive occurs.   When adding fingerprints to the filter, the invariant that no fingerprint is a prefix on another is always maintained.  In order to maintain this, a newly added fingerprint must be checked against any others with the same quotient.  If any of those also share the same remainder as well, then adaptivity bits are added to both until the invariant is once again true.  Since the invariant is maintained in this way, the fingerprint being added can only ever be a prefix of at most one other fingerprint in the filter.   While the hash for the new fingerprint may be readily available, a call to the remote representation is required to obtain the hash for the offending fingerprint already in the table (assuming there is one).  However, since we are already accessing the underlying dictionary to insert a new element to it, the access to the remote representation is permissible.  Additional adabivity bits may be added at this step due to how deletes are handled, but we will discuss that later.  When a false-positive occurs for a lookup of $x \notin S$, we again must access the remote but this time to find the hash of the offending element $y \in X$ whose fingerprint was a prefix of $h(x)$.  Once this is obtained from the remote, adaptivity bits are added to the fingerprint of $y$ in the local representation until the fingerprint of $y$ is no longer a prefix of $h(x)$.  Due to the invariant, there can only be one such $y$ that needs to be extended. 
+    What the adaptivity bits are is an extention of the {\bf base fingerprint}
+    which is comprised of the first $q + r$ bits of the hash.  So if a
+    fingerprint has $a$ adaptivity bits, the fingerprint is a prefix of the
+    respective hash with length $q + r + a$. The adaptivity bits do not have a
+    fixed length and may vary between fingerprints while some fingerprints may
+    not have any.  Adaptivity bits may be added to a fingerprint in two cases:
+    {\bf 1)} when a fingerprint is added to the Broom Filter and {\bf 2)} when
+    a false-positive occurs.   When adding fingerprints to the filter, the
+    invariant that no fingerprint is a prefix on another is always maintained.
+    In order to maintain this, a newly added fingerprint must be checked
+    against any others with the same quotient.  If any of those also share the
+    same remainder as well, then adaptivity bits are added to both until the
+    invariant is once again true.  Since the invariant is maintained in this
+    way, the fingerprint being added can only ever be a prefix of at most one
+    other fingerprint in the filter.   While the hash for the new fingerprint
+    may be readily available, a call to the remote representation is required
+    to obtain the hash for the offending fingerprint already in the table
+    (assuming there is one).  However, since we are already accessing the
+    underlying dictionary to insert a new element to it, the access to the
+    remote representation is permissible.  Additional adabivity bits may be
+    added at this step due to how deletes are handled, but we will discuss that
+    later.  When a false-positive occurs for a lookup of $x \notin S$, we again
+    must access the remote but this time to find the hash of the offending
+    element $y \in X$ whose fingerprint was a prefix of $h(x)$.  Once this is
+    obtained from the remote, adaptivity bits are added to the fingerprint of
+    $y$ in the local representation until the fingerprint of $y$ is no longer a
+    prefix of $h(x)$.  Due to the invariant, there can only be one such $y$
+    that needs to be extended. 
 	
-	 If we ignore deletes, then what we have already described is sufficient to achieve adaptivity since no a lookup for any given element will never result in a false positive more than once.  That said, the Broom filter does support deletes and we should also be concerned about the continued addition of adaptivity bits to the local representation.  Before we address these points, it is worth mentioning that the maintenance of this invariant and the adaptivity of the filter is dependent on the hash function being one-to-one.  Consider if $x \notin S$, $y \in S$ and  $h(x) = h(y)$.  In such a case, adding adaptivity bits to the fingerprint of $y$ will never make it not a prefix of $h(x)$.  This could potentially be resolved by allowing fingerprints to grow beyond the size of their hash, but this would likely have problematic implications for the size of the local representation.  This does not appear to be addressed in the design of the Broom Filter.  Deletes in the Broom Filter are carried out like those in a Quotient Filter except that the quotient and the adaptivity bits are not removed but are left as a {\bf ghost} in the filter.  When a new fingerprint is added, if there is a matching ghost in the filter, then the new fingerprint takes on all the adaptivity bits of the ghost even  if this is more than required for the standard insert process.  What this achieves is that false positives can no longer be generated by timing attacks involving repeatedly adding and removing an element from the filter that collides with some element not in the filter.  This is because, a re-inserted element essentially retains its adaptivity bits from before it was removed and thus will not collide with any elements that collided with it in the past.   
+     If we ignore deletes, then what we have already described is sufficient to
+     achieve adaptivity since no a lookup for any given element will never
+     result in a false positive more than once.  That said, the Broom filter
+     does support deletes and we should also be concerned about the continued
+     addition of adaptivity bits to the local representation.  Before we
+     address these points, it is worth mentioning that the maintenance of this
+     invariant and the adaptivity of the filter is dependent on the hash
+     function being one-to-one.  Consider if $x \notin S$, $y \in S$ and  $h(x)
+     = h(y)$.  In such a case, adding adaptivity bits to the fingerprint of $y$
+     will never make it not a prefix of $h(x)$.  This could potentially be
+     resolved by allowing fingerprints to grow beyond the size of their hash,
+     but this would likely have problematic implications for the size of the
+     local representation.  This does not appear to be addressed in the design
+     of the Broom Filter.  Deletes in the Broom Filter are carried out like
+     those in a Quotient Filter except that the quotient and the adaptivity
+     bits are not removed but are left as a {\bf ghost} in the filter.  When a
+     new fingerprint is added, if there is a matching ghost in the filter, then
+     the new fingerprint takes on all the adaptivity bits of the ghost even  if
+     this is more than required for the standard insert process.  What this
+     achieves is that false positives can no longer be generated by timing
+     attacks involving repeatedly adding and removing an element from the
+     filter that collides with some element not in the filter.  This is
+     because, a re-inserted element essentially retains its adaptivity bits
+     from before it was removed and thus will not collide with any elements
+     that collided with it in the past.   
 	 
-	 Finally, we must address the issue of continually growing adaptivity bits.  This is done with a deamortized equivalent of rebuilding the the filter every $\Theta (n)$ times adaptivity bits are added.  This is done by keeping two hash functions, $h_a$ and $h_b$, and having phases that gradually switch between hash functions.  At the beginning of a phase, frontier $z = -\infty$ and only a $h_a$ is used.  Once adaptivity bits are added, the smallest constant $k > 1$ elements of $S$ that are greater than $z$ are deleted from the filter (including their ghosts) and re-inserted using $h_b$, after which $z$ is set to be the largest element that was re-inserted.  This requires a access to the remote representation, but again this will only happen when the underlying dictionary is already being accessed.  When an element is $x$ looked up or inserted, $h_a$ is used if $x > z$ and $h_b$ is used otherwise.  Once $z$ reaches the largest element in $S$, then a new phase begins.  This is then enough to guarantee that, with high probability, there are $O(n)$ adaptivity bits in the filter at any given time.  The Broom Filter thus achieves adaptivity while still only using $O(n \log (1/\epsilon)$ space locally.  
+     Finally, we must address the issue of continually growing adaptivity bits.
+     This is done with a deamortized equivalent of rebuilding the the filter
+     every $\Theta (n)$ times adaptivity bits are added.  This is done by
+     keeping two hash functions, $h_a$ and $h_b$, and having phases that
+     gradually switch between hash functions.  At the beginning of a phase,
+     frontier $z = -\infty$ and only a $h_a$ is used.  Once adaptivity bits are
+     added, the smallest constant $k > 1$ elements of $S$ that are greater than
+     $z$ are deleted from the filter (including their ghosts) and re-inserted
+     using $h_b$, after which $z$ is set to be the largest element that was
+     re-inserted.  This requires a access to the remote representation, but
+     again this will only happen when the underlying dictionary is already
+     being accessed.  When an element is $x$ looked up or inserted, $h_a$ is
+     used if $x > z$ and $h_b$ is used otherwise.  Once $z$ reaches the largest
+     element in $S$, then a new phase begins.  This is then enough to guarantee
+     that, with high probability, there are $O(n)$ adaptivity bits in the
+     filter at any given time.  The Broom Filter thus achieves adaptivity while
+     still only using $O(n \log (1/\epsilon)$ space locally.  
 
 
-\subsection{The Hurtles of Implementation}
+\subsection{Implementation details}
 
 
 
-\subsection{A Lower Bound for Adaptivity}
-	While we may have found the implementation of the Broom Filter to be somewhat unwieldy in practice, there is still a very important takeaway.  As part of the Broom Filter's design, Bender et al. also prove that any AMQ storing a set of size $n$ from a universe of size $u > n^4$ requires $\Omega (\min \{n\log n, n\log\log u\})$ bits of space with high probability in order to maintain a sustained false-positive rate $\epsilon < 1$.  This is why the remote representation is required if the local representation is to be near the optimal size for a traditional AMQ and why it is not surprising that the Adaptive Cuckoo Filter also shares this two part structure.  
+\subsection{A Lower Bound for Adaptivity} While we may have found the
+implementation of the Broom Filter to be somewhat unwieldy in practice, there
+is still a very important takeaway.  As part of the Broom Filter's design,
+Bender et al. also prove that any AMQ storing a set of size $n$ from a universe
+of size $u > n^4$ requires $\Omega (\min \{n\log n, n\log\log u\})$ bits of
+space with high probability in order to maintain a sustained false-positive
+rate $\epsilon < 1$.  This is why the remote representation is required if the
+local representation is to be near the optimal size for a traditional AMQ and
+why it is not surprising that the Adaptive Cuckoo Filter also shares this two
+part structure.  
 
 
 \end{document}
