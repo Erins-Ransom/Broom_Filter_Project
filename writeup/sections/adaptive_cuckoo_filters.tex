@@ -5,10 +5,10 @@ To better understand the properties of the Broom filter, we compare it to the ad
 The \emph{adaptive cuckoo filter} \cite{adaptive-cuckoo} is a practical solution to the AMQ problem with adaptivity, combining a cuckoo filter and cuckoo hash table.
 
 \subsection{Cuckoo Hashing}
-A cuckoo hash table stores its entries in an array of length $n$ and uses two hash functions $h_1,h_2:U\to \{0,\ldots,n-1\}$ \cite{prob-textbook}.
+A cuckoo hash table, first introduced in \cite{cuckoo-hash}, stores its entries in an array of length $n$ and uses two hash functions $h_1,h_2:U\to \{0,\ldots,n-1\}$.
 Each entry in the array is known as a \emph{bucket}, and in this case the bucket can store one element. When inserting an item $x$, we compute both $h_1(x)$ and $h_2(x)$. If any one of the two slots are empty, we insert $x$ into that slot.
-Otherwise, we pick one of the two slots at random. Suppose that slot stores the item $y$. Then, we evict $y$, insert $x$ into that location,
-and proceed to insert $y$ back into the table. To find an element's location, we only need to check the results of the two hashes.
+Otherwise, we pick one of the two occupied slots at random. Suppose that slot currently stores the item $y$. Then, we evict $y$, insert $x$ into that location,
+and proceed to insert $y$ back into the table. To look up an element, we only need to compute two hashes and check two locations to find its value.
 Cuckoo hashing presents worst case $O(1)$ lookup time and amortized $O(1)$ insertion time, as long as the length of the array is some constant factor $c$ longer
 than the number of elements. It is an example of the Power of Two Choices in action.
 
@@ -25,19 +25,23 @@ The filter supports deletion of elements by removing their fingerprint from the 
 Fan et. al generalized the filter to include multiple slots per bucket
 
 \subsection{Adaptive Cuckoo Filter}
-The adaptive cuckoo filter \cite{adaptive-cuckoo} can answer approximate membership queries while adapting to false positives. The filter combines a Cuckoo filter and a Cuckoo hash table,
-which share the same hash functions $h_1,h_2$ and the same length. The size of a bucket is much smaller in the filter, since it only stores the fingerprint plus some additional bits for adaptivity.
-To use the framework presented by Bender et. al \cite{broom-filter}, the cuckoo hash table is stored remotely since it is only used when adapting to false positives.
+Mitzenmacher et.\ al introduced in \cite{adaptive-cuckoo} the adaptive cuckoo filter, which can answer approximate membership queries while adapting to false positives. The filter combines a cuckoo filter and a cuckoo hash table,
+which share the same hash functions $h_1,h_2$ and the same length. To use the framework presented by Bender et. al \cite{broom-filter}, the cuckoo hash table is stored remotely since it is only used when adapting to false positives.
+Furthermore, each bucket in the cuckoo filter stores a pair $(p,\alpha)$, where $p$ is a fingerprint and $\alpha$ is a number with $s$ bits that will help the filter adapt. We also maintain a list of hash functions $f_0,\ldots,f_{2^s-1}$ to create the fingerprint. For an element $x\in U$ and number $\alpha$, $x$'s fingerprint is given by $f_\alpha(x)$.
 
 The filter and the table satisfy the following invariant: for each element $x$ in the hash table, $x$'s fingerprint is stored in the same location in the Cuckoo filter.
 
-\textbf{Insertions and Deletions:} To insert an element into an adaptive cuckoo filter, insert the element into both the cuckoo filter and the cuckoo hash table. We do not use partial-key cuckoo hashing because
-the insertion operation can retrieve the whole element from the cuckoo hash table. Since the two structures use the same hash function, the element will be inserted into the same location.
+\textbf{Insertions and Deletions:} To insert an element into an adaptive cuckoo filter, insert into the cuckoo hash table and the cuckoo filter at either $h_1(x),h_2(x)$, evicting an element if necessary.
+Since the two structures use the same hash function, the element will be inserted into the same location. Notice that we do not use partial-key cuckoo hashing here. This is okay because when we evict an element $x$ for the filter, the corresponding element in the cuckoo hash table needs to be evicted as well
+to maintain the invariant. As a result, we can retrieve the original element from the hash table.  The cuckoo hash table receives element $x$ and the cuckoo filter receives the pair $(f_0(x),0)$.
 
-\textbf{Adapting:} A false positive occurs when an element not in $S$ shares the same hash and the same fingerprint as an element in $S$. This is detected at the time when we retrieve the element from the
-Cuckoo hash table. 
+\textbf{Lookup and Adapting:} To check if an element $x$ is in the set, we first calculate $h_1(x), h_2(x)$. If one of the bucket contains a pair $(p,\alpha)$ satisfying $f_\alpha(x)=p$, i.e. the fingerprint matches, then the element is possibly in the set.
 
-% Finishing adaptive but thought I'd first push.
-% Will edit the first paragraph. I find the reason this is difficult is that it's all Mitzenmacher's work.
+A false positive occurs when an element $y\not\in S$ shares the same hash and the same fingerprint as $x\in S$. This is detected at the time when we retrieve the element from the
+Cuckoo hash table. To adapt for this false positive, we increase $\alpha$ by $1$ and change the fingerprint for $x$ accordingly. It is unlikely for $x,y$ to share the same fingerprint again.
+Therefore, the filter has adapted to this false positive. The adaptive cuckoo filter shares a similar generalization as the cuckoo filter for cases where each bucket has more than one cell, with some changes to the adapting algorithm.
+
+The paper does not present many theoretical results about the filter. However, Mitzenmacher et.\ al performed simulations with randomly generated queries and real-world data and found that in practice the adaptive cuckoo filter beats the cuckoo filter in most configurations where some queries are repeated more than others. Cuckoo filters already boast high efficiency in practice, which makes the adaptive cuckoo filters even more impressive.
+
 % Just feel this looming eye of Mitzenmacher shining on me for every word I write. Spooky!
 \end{document}
