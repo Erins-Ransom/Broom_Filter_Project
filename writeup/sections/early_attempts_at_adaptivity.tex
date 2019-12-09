@@ -1,6 +1,26 @@
 \documentclass[../paper.tex]{subfiles}
 \begin{document}
-
+Over the years there have been various attempts to address the shortcomings of AMQs.  
+One method seen in the {\it Bloomier Filter} \cite{bloomier-filter} makes use of a whitelist 
+W with size $w$ of predetermined potential false-positives.  Whenever there is a lookup 
+for an element $x \in W \setminus S$, the Bloomier Filter returns \textit{is false-positive}.   
+This works well if you can determine problematic queries ahead of time; however, the 
+Bloomier Filter requires $O((n+w)\log(1/\epsilon))$ bits and the list of bad queries 
+cannot be dynamically updated without a potential blow up in space.   A more dynamic 
+method that has been explored is to targetedly remove false-positives at the cost of 
+introducing random false-negatives.  This can be seen in {\it Retouched Bloom Filters} 
+\cite{retouched-filter}; however, not all applications are tolerant of false-positives 
+which makes this option less viable depending on the situation.  Yet another method 
+that has been used is to assign different numbers of hash functions to different elements
+depending on their frequency as seen in {\it Weighted Bloom Filters} \cite{weighted-filter};
+however, this technique is dependent predetermined statistics and is not able to dynamically
+adapt.  More recently, another method has been explored were the representations for 
+elements within the AMQ are changed in response to false positives as seen in the {\it 
+Adaptive Cuckoo Filter} \cite{adaptive-cuckoo} and {\it Broom Filter} \cite{broom-filter}. 
+Both of these make use of a technique were a second structure that is accessed in tandem 
+with the underlying set and is used to provide the information required to adapt to 
+false-positives.  We will go into greater detail on these last two because they are the most
+rigorous solutions to adaptive AMQs that we could find.  
 
 \end{document}
 
