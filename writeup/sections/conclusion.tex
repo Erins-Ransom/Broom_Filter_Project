@@ -1,6 +1,36 @@
 \documentclass[../paper.tex]{subfiles}
 \begin{document}
+After having discussed the designs of both the Adaptive Cuckoo Filter and the 
+Broom Filter, there seems to be a general strategy that can be applied to 
+achieve a fairly strong amount of adaptivity in an AMQ without a prohibitive 
+increase in the amount of local space used.  We start by taking a traditional 
+AMQ that uses discrete representations of its members, like the fingerprints 
+used in the Quotient and Cuckoo filters, so that we have the ability to 
+change the representations of individual elements in the filter and use that as 
+our local representation.  We then add a second structure which is updated and 
+accessed in tandem with underlying set.  This second structure then needs to be 
+able to supply sufficient information for the local representation to change the 
+representations of individual elements in order to correct for false-positives.  As 
+shown by Bender et al.'s proof \cite{broom-filter}, this second structure is 
+critical to keeping the size of the local representation near optimal.  
 
+	As show by the Broom Filter, this strategy can be taken to the extreme were the 
+	method of adaptation goes as far as to guarantee that two elements will never 
+	collide more than once within a given phase.  Alternatively, we can use a slightly 
+	more relaxed method of adaptation as seen in the Adaptive Cuckoo Filter were, 
+	once two elements have collided, they are very unlikely to collide again.  After 
+	having attempted to implement the rigorous method of the Broom Filter, we have
+	an increased appreciation for the simplicity of Adaptive Cuckoo Filter's design, 
+	even if it does not lend itself as nicely to rigorous analysis.  
+	
+	It is also worth noting that this strategy for adding adaptivity does not lend itself 
+	well to all traditional AMQs.  For example, consider a traditional Bloom Filter were 
+	each element in the filter is represented by $k$ bits in a table that are assigned by 
+	$k$ hash functions.  Because the representations of multiple elements can overlap, 
+	updating a single one without changing the others becomes problematic and 
+	potentially prohibitive to adaptivity.  That said, filters that make use of discrete 
+	representations for each element tend to make better use of space in the first 
+	place through methods like quotienting in the Quotient and Broom Filters.  
 
 \end{document}
 
