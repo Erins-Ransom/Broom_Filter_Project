@@ -13,38 +13,55 @@ our experience the broom filter is quite impractical. Even a naive implementatio
 would be cumbersome and time-consuming to write, and important details such as
 how adaptivity bits can be stored and maintained efficiently are left out.
 
-\subsection{The Quotient Filter} To understand how the broom filter functions
-will first require a description of the Quotient Filter from which it was
-designed.   Unlike your standard Bloom filter which uses multiple hash
-functions and flips bits in table for each inserted element, the Quotient
-Filter uses a single hash function and stores a fingerprint for each inserted
-element.  The fingerprint for an element $x$ is a prefix of the hash $h(x)$ and
-is stored as two separate pieces, the {\bf quotient} and the {\bf remainder}.
-The quotient consists of the first $q = log(n)$ bits of $h(x)$ while the
-remainder consists of the following $r = log(1/\epsilon)$ bits.  The filter has
-a table of $O(n)$ buckets of size $log(1/\epsilon)$ and when a element is
-added, its remainder is stored in the table at the position indexed by its
-quotient.  When collisions occur, they are resolved using linear probing, but
-two invariant are maintained: {\bf 1)} all remainders with the same quotient
-are stored contiguously in a {\bf run}, wrapping around to the beginning if
-necessary, and {\bf 2)} that if remainder $a$ is stored before remainder $b$
-then the quotient of $a$ is less than or equal to the quotient of $b$ modulo
-the wrapping.  
+\subsection{The Quotient Filter}
 
-    To ensure that any fingerprint can be decode some additional information is
-    needed.   For this reason, three metadata bits are stored at the beginning
-    of each remainder to encode whether a bucket is occupied, whether it has
-    been shifted and whether it is part of a run.  Whenever a remainder is
-    added, the is occupied bit for its intended bucket is always set to 1.  If
-    a remainder is not stored in its intended bucket, then the is shifted bit
-    of the bucket it is stored in is set to 1.  If the bucket has the same
-    intended bucket as the one before, part of a run bit is set 1.  When we
+The broom filter builds on a previous work called the quotient filter, which
+is a non-adaptive AMQ meant to be an optimal and practical alternative to a bloom filter.
+The quotient filter uses a single hash function and computes a \textit{fingerprint} for
+each element inserted to the set. Given an element $x$, the fingerprint of $x$ is a
+prefix of the hash $h(x)$ and is divided into two separate pieces, the \textit{quotient} with
+size $q$ bits and the \textit{remainder}, with size $r$ bits. The fingerprint is therefore
+the first $q+r$ bits of $h(x)$.
+The quotient filter is an array of $2^q$ buckets, where
+each bucket consists of $r$ bits, plus three extra metadata bits.
+The sizes of the quotient and remainder are tunable
+parameters of the quotient filter, which affect the false-positive probability $\epsilon$.
+
+\textbf{Insertions and lookups:} To insert an element $x$ into the quotient filter, we first
+compute the fingerprint of $x$: $p(x)$. Then we find the bucket corresponding
+to the quotient and insert the remainder bits at that bucket. Assuming the bucket
+is empty during insertion, a lookup for $y$ would be simple: we go to the correct bucket as given
+by the quotient of $y$ and check if the remainder bits are the same. However, if the bucket is
+full, linear probing is used to find an empty bucket, provided two invariants are maintained:
+
+\begin{enumerate}
+    \item All remainders with the same quotient are stored contiguously in a \textit{run}, wrapping around to the beginning if necessary.
+    \item If remainder $a$ is stored before remainder $b$, then the quotient of $a$ is less than or equal to the quotient of $b$ modulo the wrapping.
+\end{enumerate}
+
+We then have to apply the correct metadata bits to all buckets that are touched by the probe. These metadata
+bits will allow us to determine which remainders correspond to which quotients,
+since due to linear probing remainders will be shifted from their correct quotients.
+The three metadata bits provide the following information for each bucket:
+
+\begin{enumerate}
+    \item \texttt{occupied} bit: is the bucket occupied?
+    \item \texttt{shifted} bit: is the remainder stored at this bucket shifted from its corresponding quotient?
+    \item \texttt{run} bit: is this bucket a part of a run?
+\end{enumerate}
+
+    Whenever a remainder is
+    added, the \texttt{occupied} bit for its intended bucket is always set to 1.  If
+    a remainder is not stored in its intended bucket, then the \texttt{shifted} bit
+    of the bucket it is stored in is set to 1.  If the remainder has the same
+    intended bucket as the remainder immediately before it, the \texttt{run} bit is set to 1.  When we
     perform a lookup for element $x$, we check the bucket indexed by the first
-    $q$ bits of $h(x)$.  If the is occupied bit is 0, we immediately return
-    $false$; otherwise, if the is shifted bit is 0, we check the remainder
-    being looked up against all remainders in the run and return $true$ if we
-    find a match and $false$ if not.  If the is shifted bit is 1, then we must
-    first find the beginning of the {\bf cluster}, a group of runs with now
+    $q$ bits of $h(x)$.  If \texttt{occupied} is 0, we immediately return
+    \textit{absent}; otherwise, if \texttt{shifted} is 0, we scan the current run for a remainder
+    that matches the remainder being looked up, and return \textit{present} if a match is found,
+    and \textit{absent} otherwise.
+    If the \texttt{shifted} bit is 1, then we must
+    first find the beginning of the {\bf cluster}, a group of runs with no
     empty buckets between them, and then scan forward keeping track of the
     number of runs and the number of occupied buckets to determine the location
     of our target run.  If we reach the end of the cluster without finding it,
@@ -52,14 +69,20 @@ the wrapping.
     remainders in that run and return $true$ or $false$ accordingly.  Deletes
     can be performed by looking up the corresponding remainder (of which their
     may be multiple) and removing it and then shifting other remainders and
-    updating metadata bits as needed.  A false positive thus occurs if $h(x) =
+    updating metadata bits as needed.
+    
+    Let $k$ be the number of occupied buckets in the filter. A false positive thus occurs if $h(x) =
     h(y)$ when $x \in S$ and $y \notin S$.  Assuming $h: {\bf U} \rightarrow
     \{0, ... , 2^{q+r}-1\}$ generates outputs that are distributed uniformly
     and independently, then the probability of a false positive is given by $$
-    1 - \big(1 - \frac{1}{2^{q+r}}\big)^n \approx 1- e^{-n/(q+r)} \leq
-    \frac{n}{2^{(q+p)}} \leq \frac{2^q}{2^{(q+r)}} \leq 2^{-r} = \epsilon .$$
-    Thus, the quotient filter achieves a false-positive probability of
-    $\epsilon$ while using $O(n \log (1/\epsilon))$ space.  	
+    1 - \big(1 - \frac{1}{2^{q+r}}\big)^k \approx 1- e^{-k/(q+r)} \leq
+    \frac{k}{2^{(q+p)}} \leq \frac{2^q}{2^{(q+r)}} \leq 2^{-r}.$$
+
+    If we would like to choose $r$ and $q$ such that the filter has a false-positive
+    probability of at most $\epsilon$, and $n$ is the maximum set size, we can choose $q=\log(n)$
+    and $r=\log(1/\epsilon)$.
+    With these choices, the quotient filter achieves a false-positive probability of at most
+    $2^{-r} = \epsilon$ while using $O(2^q r) = O(n \log (1/\epsilon)$ space.  	
 
 \subsection{Adding Adaptivity} Now that we have a better understanding of the
 original data structure, we will now discuss how it was modified to achieve
