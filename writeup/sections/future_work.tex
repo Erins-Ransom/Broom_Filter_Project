@@ -1,5 +1,24 @@
 \documentclass[../paper.tex]{subfiles}
 \begin{document}
+Intro paragraph... 
+
+\subsection{Benefits of Rigorous Adaptivity}
+While the fully optimized design of the Broom Filter proved difficult to implement,
+a naive implementation that uses as much space as it wants would likely be 
+more feasible.  This in turn could be used to see the benefits of the Broom Filter's
+strong guarantees in actual work loads.  This could also be used to test whether 
+strategies that are simpler to implement but may have weaker theoretical 
+guarantees, like the Adaptive Cuckoo Filter, actually fair any worse in practice.  
+
+\subsection{A Generalized Framework for Adaptivity}
+Bender et al. \citep{bloom-filter} made significant strides in showing what is required
+for a generalized AMQ to be adaptive, in particular their lower bound on the required 
+space, but this can likely be taken even further.  For example, are the discrete 
+representations of elements that we see in both the Adaptive Cuckoo and Broom 
+Filters also a requirement for adaptivity or could a traditional Bloom Filter  be made 
+adaptive using the right strategy?  
+
+\subsection{More Stuff...}
 
 
 \end{document}
