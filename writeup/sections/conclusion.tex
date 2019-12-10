@@ -14,17 +14,17 @@ representations of individual elements in order to correct for false-positives. 
 shown by Bender et al.'s proof \cite{broom-filter}, this second structure is 
 critical to keeping the size of the local representation near optimal.  
 
-	As show by the Broom Filter, this strategy can be taken to the extreme were the 
+	As shown by the Broom Filter, this strategy can be taken to the extreme where the 
 	method of adaptation goes as far as to guarantee that two elements will never 
 	collide more than once within a given phase.  Alternatively, we can use a slightly 
-	more relaxed method of adaptation as seen in the Adaptive Cuckoo Filter were, 
+	more relaxed method of adaptation as seen in the Adaptive Cuckoo Filter where, 
 	once two elements have collided, they are very unlikely to collide again.  After 
 	having attempted to implement the rigorous method of the Broom Filter, we have
 	an increased appreciation for the simplicity of Adaptive Cuckoo Filter's design, 
 	even if it does not lend itself as nicely to rigorous analysis.  
 	
 	It is also worth noting that this strategy for adding adaptivity does not lend itself 
-	well to all traditional AMQs.  For example, consider a traditional Bloom Filter were 
+	well to all traditional AMQs.  For example, consider a traditional Bloom Filter where 
 	each element in the filter is represented by $k$ bits in a table that are assigned by 
 	$k$ hash functions.  Because the representations of multiple elements can overlap, 
 	updating a single one without changing the others becomes problematic and 
