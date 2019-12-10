@@ -13,7 +13,7 @@ Cuckoo hashing presents worst case $O(1)$ lookup time and amortized $O(1)$ inser
 than the number of elements. It is an example of the Power of Two Choices (TODO: Reference) in action.
 
 The cuckoo filter \cite{cuckoo-filter}, first proposed by Fan, Andersen, Kaminsky and Mitzenmacher, is a high speed data structure that can answer approximte membership queries while supporting deletions.
-The filter uses a similar strategy as the cuckoo hash table. We maintain an array and for each element $x\in S$, we store a fingerprint of $x$ (a prefix of the hash used to insert $x$) in either of the two locations. False positives only occur when one element has the same fingerprint of another. Then, we can decrease false positive probability $\epsilon$ using extra space by increasing the length of the fingerprint.
+The filter uses a similar strategy as the cuckoo hash table. We maintain an array and for each element $x\in S$, we store a fingerprint of $x$ (TODO explain what a fingerprint is) in either of the two locations. False positives only occur when one element has the same fingerprint of another. Then, we can decrease false positive probability $\epsilon$ using extra space by increasing the length of the fingerprint.
 
 One challenge of constructing the cuckoo filter comes from us not having access to the original element. When we try to evict an element $x$, only the fingerprint
 is stored in the cuckoo filter, but we need to calculate the other location the element can be hashed into. Fan et.\ al solves the problem using a technique known as \emph{partial-key cuckoo hashing}.
