@@ -8,7 +8,7 @@
     while some also support deletes.  When performing a lookup for an item $x$
     that has been inserted, i.e. $x\in S$, the AMQ is guaranteed to return
     {\it present}.  The downside of their compact representation of $S$ is
-    that, when a lookup is performed for an item $x \notinS$, {\it present}
+    that, when a lookup is performed for an item $x \notin S$, {\it present}
     may be returned with probability $\epsilon$.  This {\bf false-positive
     probability} is a usually a tunable parameter with a lower $\epsilon$
     typically requiring more space to be used by the AMQ.  That said, their
