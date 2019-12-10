@@ -1,41 +1,53 @@
 \documentclass[../paper.tex]{subfiles}
 \begin{document}
 \newcommand{\on}{\operatorname}
-To better understand the properties of the Broom filter, we compare it to the adaptive cuckoo filter.
-The \emph{adaptive cuckoo filter} \cite{adaptive-cuckoo} is a practical solution to the AMQ problem with adaptivity, combining a cuckoo filter and cuckoo hash table.
+The \emph{adaptive cuckoo filter} \cite{adaptive-cuckoo} is a practical solution to the AMQ problem with adaptivity, combining a cuckoo filter and cuckoo hash table. Both of these structures are based on the
+technique of \emph{cuckoo hashing}, where having two choices for each object allows for constant lookup times. We now describe the tools used in an adaptive cuckoo filter.
 
 \subsection{Cuckoo Hashing}
-A cuckoo hash table, first introduced in \cite{cuckoo-hash}, stores its entries in an array of length $n$ and uses two hash functions $h_1,h_2:U\to \{0,\ldots,n-1\}$.
-Each entry in the array is known as a \emph{bucket}, and in this case the bucket can store one element. When inserting an item $x$, we compute both $h_1(x)$ and $h_2(x)$. If either of the two array entries (slots) indexed by the $h_1(x)$ and $h_2(x)$ are empty, we insert $x$ into that slot.
-Otherwise, we pick one of the two occupied slots at random. Suppose that slot currently stores the item $y$. Then, we evict $y$, insert $x$ into that location,
-and proceed to insert $y$ back into the table. To look up an element, we only need to compute two hashes and check two locations to find its value.
-Cuckoo hashing presents worst case $O(1)$ lookup time and amortized $O(1)$ insertion time, as long as the length of the array is some constant factor $c$ longer
-than the number of elements. It is an example of the Power of Two Choices (TODO: Reference) in action.
+The adaptive cuckoo filter uses a cuckoo hash table \cite{cuckoo-hash} and the cuckoo filter \cite{cuckoo-filter}. As the name suggests, the cuckoo filter is an
+efficient data structure for AMQ's. Both objects maintain an array of length $n$. Each entry of the array is known as a \emph{bucket}, and a bucket can have either one or multiple \emph{slots}.
+The structures use two hash functions $h_1,h_2:U\to \{0,\ldots,n-1\}$ to determine where each element of the set is stored.
 
-The cuckoo filter \cite{cuckoo-filter}, first proposed by Fan, Andersen, Kaminsky and Mitzenmacher, is a high speed data structure that can answer approximte membership queries while supporting deletions.
-The filter uses a similar strategy as the cuckoo hash table. We maintain an array and for each element $x\in S$, we store a fingerprint of $x$ (a prefix of the hash used to insert $x$) in either of the two locations. False positives only occur when one element has the same fingerprint of another. Then, we can decrease false positive probability $\epsilon$ using extra space by increasing the length of the fingerprint.
+In a cuckoo hash table, the entire key is stored in the bucket. In a cuckoo filter, only a fingerprint is stored. Insertions, lookup and deletes are performed as follows. For convenience, let $x$ be the argument in all three procedures.
 
-One challenge of constructing the cuckoo filter comes from us not having access to the original element. When we try to evict an element $x$, only the fingerprint
-is stored in the cuckoo filter, but we need to calculate the other location the element can be hashed into. Fan et.\ al solves the problem using a technique known as \emph{partial-key cuckoo hashing}.
-The two hash functions are linked using \begin{align*}
-    h_1(x)&=\on{hash}(x), \\ h_2(x)&=h_1(x)\oplus \on{hash}(x\text{'s fingerprint}).
-\end{align*} Then, the two hashes can be calculated for each other by taking the XOR of each hash with $\on{hash}(x\text{'s fingerprint})$. The filter also supports deletion of elements by removing their fingerprint from the original bucket.
+\textbf{Insert:} Compute both $h_1(x)$ and $h_2(x)$. If either of the two array entries (buckets) indexed by the $h_1(x)$ and $h_2(x)$ has remaining slots, we insert $x$ into that slot.
+Otherwise, we pick one of the occupied slots at random. Suppose that slot currently stores the item $y$. Then, we evict $y$, insert $x$ into the now-empty slot and perform \texttt{INSERT(y)}.
 
+This process will succeed as long as we do not run into cycles, which occurs with low probability as long as the load is bounded. Another issue is that we need to compute $h_1(y),h_2(y)$
+when we evict $y$ and insert it back. This is not possible in a normal cuckoo filter since we only have access to the fingerprint, and the issue is resolved using a technique known as \emph{partial-key cuckoo hashing}.
+However, this is not necessary when a cuckoo hash table and filter work in tandem, as we will explore in the next section.
+
+\textbf{Lookup:} Compute $h_1(x)$ and $h_2(x)$ and check if either of the two buckets stores item $x$ (or its fingerprint). If it does, return the object (or \texttt{present}, for a cuckoo filter). Otherwise, return \texttt{absent}.
+
+\textbf{Delete:} After looking up the location of $x$, remove the item (or its fingerprint) from the data structure.
+
+The cuckoo hash table provides worst case $O(1)$ lookup time and amortized $O(1)$ insertion time, as long as the load factor, the proportion of slots that are occupied, is less than some constant $c$.
+The value of $c$ is around $50\%$ when the bucket can only store 1 item, and increases to over $90\%$ when the bucket can store 3 items. The worst case $O(1)$ lookup is a significant improvement over hash tables
+with other strategies of resolving collisions such as linear probing. The general phenomenon that having two choices increases a data structure's performance is named by Mitzenmacher as ``the Power of Two Choices'' \cite{prob-textbook}.
+
+In the cuckoo filter, a lookup causes a false positive only if two elements share the same hash and the same fingerprint. Then, we can tune the false positive probability $\epsilon$ using extra space by increasing the length of the fingerprint.
 The filter is more space efficient than the Bloom filter when the false-positive rate $\epsilon$ is relatively small (less than $3\%$), and continues to perform even when the load is above $90\%$.
-Fan et. al generalized the filter to include multiple slots per bucket
+Fan et. al \cite{cuckoo-filter} generalized the filter to include multiple slots per bucket and used a technique known as \emph{semi-sorting} to further improve the filter's space efficiency when buckets have more than 1 slots.
 
 \subsection{Adaptive Cuckoo Filter}
-Mitzenmacher et.\ al introduced in \cite{adaptive-cuckoo} the adaptive cuckoo filter, which can answer approximate membership queries while adapting to false positives. The filter combines a cuckoo filter and a cuckoo hash table,
-which share the same hash functions $h_1,h_2$ and the same length. Analogously to the framework presented by Bender et. al \cite{broom-filter}, the cuckoo hash table would be stored remotely since it is only used when adapting to false positives.
-Furthermore, each bucket in the cuckoo filter stores a pair $(p,\alpha)$, where $p$ is a fingerprint and $\alpha$ is a number with $s$ bits that will help the filter adapt. We also maintain a list of hash functions $f_0,\ldots,f_{2^s-1}$ to create the fingerprints. For an element $x\in U$ and number $\alpha$, $x$'s fingerprint is given by $f_\alpha(x)$.
+Mitzenmacher et.\ al introduced in \cite{adaptive-cuckoo} the adaptive cuckoo filter, which can answer approximate membership queries while adapting to false positives. We will use a framework similar
+to the one used in the broom filter analysis \cite{broom-filter} to facilitate comparisons and proofs in the future.
+
+The adaptive cuckoo filter uses a cuckoo hash table and cuckoo filter, as described above. The cuckoo hash table would be stored remotely since it is only used when adapting to false positives.
+Instead of storing on a fingerprint $p$ in the cuckoo filter, we store a pair $(p,\alpha)$, where $p$ is the fingerprint and $\alpha$ is a number with $s$ bits that will help the filter adapt. 
+The filter maintains a family of hash functions $f_0,\ldots,f_{2^s-1}$. The fingerprint of an element $x\in U$ and a number $\alpha$ is equal to $f_\alpha(x)$.
 
 The filter and the table satisfy the following invariant: for each element $x$ in the hash table, $x$'s fingerprint is stored in the same location in the Cuckoo filter as it is in the table.
 
-\textbf{Insertions and Deletions:} To insert an element into an adaptive cuckoo filter, insert into the cuckoo hash table and the cuckoo filter at either $h_1(x),h_2(x)$, evicting an element if necessary.
-Since the two structures use the same hash function, the element will be inserted into the same location. Notice that we do not use partial-key cuckoo hashing here. This is okay because when we evict an element $x$ for the filter, the corresponding element in the cuckoo hash table needs to be evicted as well
-to maintain the invariant. As a result, we can retrieve the original element from the hash table.  The cuckoo hash table receives element $x$ and the cuckoo filter receives the pair $(f_0(x),0)$.
+\textbf{Insertions and Deletions:} To insert or delete an element $x\in S$, perform the operation in both the cuckoo hash table and the cuckoo filter.
+Since the two structures use the same hash function, the element will be inserted into the same location in the array. Therefore, the invariant is maintained.
+The cuckoo hash table inserts element $x$ and the cuckoo filter inserts the pair $(f_0(x),0)$.
 
-\textbf{Lookup and Adapting:} To check if an element $x$ is in the set, we first calculate $h_1(x), h_2(x)$. If one of the bucket contains a pair $(p,\alpha)$ satisfying $f_\alpha(x)=p$, i.e. the fingerprint matches, then the element is possibly in the set.
+When we evict a finger $p_y$ from the cuckoo filter, the corresponding element $y$ is also evicted from the cuckoo hash table.
+Since the operation already accesses the remote hash table, retrieving the element $y$ from the hash table has minimal overhead. As a result, partial-key cuckoo hashing is not necessary.
+
+\textbf{Lookup and Adapting:} To check if an element $x$ is in the set, we first calculate $h_1(x), h_2(x)$. If one of the bucket contains a pair $(p,\alpha)$ satisfying $f_\alpha(x)=p$, i.e. the fingerprint matches, return \texttt{present}.
 
 A false positive occurs when an element $y\not\in S$ shares the same fingerprint as $x\in S$. This is detected at the time when we retrieve the element from the
 Cuckoo hash table. To adapt for this false positive, we increment $\alpha$ and change the fingerprint for $x$ accordingly. It is unlikely for $x,y$ to share the same fingerprint again.
@@ -43,5 +55,7 @@ Therefore, the filter has adapted to this false positive. The adaptive cuckoo fi
 
 Although their paper does not present many theoretical guarantees about their filter, Mitzenmacher et.\ al performed simulations with randomly generated queries and real-world data and found that in practice the adaptive cuckoo filter beats the cuckoo filter in most configurations where some queries are repeated more than others. Cuckoo filters already boast high efficiency in practice, which makes the adaptive cuckoo filters even more impressive.
 
-% Just feel this looming eye of Mitzenmacher shining on me for every word I write. Spooky!
+The adaptive cuckoo filter is also easy to implement because each bucket uses a constant number of adaptivity bits that does not change over time.
+As a result, the memory for the adaptivity bits can be allocated at the start and it is easy to keep them compact. We will see that this is not the case
+for the broom filter and that this makes an efficient broom filter implementation almost impossible.
 \end{document}
