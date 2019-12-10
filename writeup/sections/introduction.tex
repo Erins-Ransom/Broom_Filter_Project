@@ -4,11 +4,11 @@
     Bloom filters and other approximate membership query data structures, or
     AMQs, are often used to help avoid costly lookups to large dictionaries.
     They achieve this by keeping a compact representation of a set
-    {\bf S} of keys from a universe {\bf U}.  All AMQs support inserts and lookups
+    $S$ of keys from a universe $U$.  All AMQs support inserts and lookups
     while some also support deletes.  When performing a lookup for an item $x$
-    that has been inserted, i.e. $x\in {\bf S}$, the AMQ is guaranteed to return
-    {\it present}.  The downside of their compact representation of {\bf S} is
-    that, when a lookup is performed for an item $x \notin {\bf S}$, {\it present}
+    that has been inserted, i.e. $x\in S$, the AMQ is guaranteed to return
+    {\it present}.  The downside of their compact representation of $S$ is
+    that, when a lookup is performed for an item $x \notin S$, {\it present}
     may be returned with probability $\epsilon$.  This {\bf false-positive
     probability} is a usually a tunable parameter with a lower $\epsilon$
     typically requiring more space to be used by the AMQ.  That said, their
@@ -39,4 +39,11 @@
     answers to previous queries and show that the Broom Filter is proveably
     adaptive.
 
+    We first discuss previous attempts at adaptivity, such as the bloomier filter
+    and the retouched bloom filter. Then, we focus on the adaptive cuckoo filter
+    and the broom filter. We study the theory for designing adaptive filters and
+    compare the two filters' theoretical guarantees and practical performance.
+    Through a long endeavor to implement the broom filter, we find concerns about
+    the broom filter that makes it impractical. In other words, adaptive cuckoo
+    filter is currently the most practical solution for adaptive AMQs.
 \end{document}
