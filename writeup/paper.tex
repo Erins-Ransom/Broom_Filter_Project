@@ -1,4 +1,4 @@
-\title{A Survey of Adaptive Filter Techniques}
+\title{A Survey of Adaptive AMQs}
 \author{
         Eric Knorr, Richard Xu, Zachary Yedidia \\ % alphabetical order by last name
         \\
@@ -24,10 +24,10 @@
 \begin{abstract}
         Bloom filters and other approximate membership query data structures, or
     AMQs, are often used to help avoid costly lookups to large dictionaries.
-    They achieve this by keeping a small, probabilistic representation of a set
+    They achieve this by keeping a compact representation of a set
     {\bf S} of keys from a universe {\bf U}.  All AMQs support inserts and
     lookups while some also support deletes.  When performing a lookup for an
-    item $x$ that has been inserted, i.e. $x\in {\bf S}$, the AMQ will always
+    item $x$ that has been inserted, i.e. $x\in {\bf S}$, the AMQ is guaranteed to
     return {\it present}.  The downside of their compact representation of {\bf S}
     is that, when a lookup is performed for an item $x \notin {\bf S}$, {\it
     present} may be returned with probability $\epsilon$.  This {\bf
@@ -40,9 +40,9 @@
     often does it return false-positives and how much space does it require to
     do so?
 
-    The majority of current AMQs offer strong guarantees for individual
+    The majority of current AMQs offer strong guarantees for independent
     queries; however, the false-positive probability rates for most can be
-    pushed toward 1 given the right sequence of non-independent queries.  Some recent
+    pushed towards 1 given the right sequence of non-independent queries.  Some recent
     AMQs have been designed to account for this shortcoming. We call these
     {\bf adaptive} AMQs because they maintain a false-positive probability of
     $\epsilon$ for every lookup regardless of the answers to previous lookups (adapting

@@ -1,8 +1,6 @@
 \documentclass[../paper.tex]{subfiles}
 
-\begin{document} Bender et al.
-
-\cite{broom-filter} introduce a different adaptive filter, called the "broom filter"
+\begin{document} Bender et al. \cite{broom-filter} introduce a different adaptive filter, called the ``broom filter''
 (because it cleans up after itself). They make two key contributions to the
 field of adaptive filters: describing the broom filter data structure itself,
 as well as formalizing the idea of adaptivity and providing proofs regarding the guaratees
@@ -178,7 +176,53 @@ portion are essentially free asymptotically.
 
 \subsection{Implementation details}
 
+\cite{broom-filter} provide a thorough description of the theory of
+the broom filter, but some key implementation details are left out.
+Most notably the storage of the adaptivity bits is a real problem
+in practice because they are variable sized chunks of memory that
+are often smaller than a machine word. This means that in practice,
+to store the adaptivity bits, we also need to keep track of sizes
+for each chunk, and need to dynamically resize when more bits are needed.
+This is a lot of overhead, especially in real applications the adaptivity
+bits don't use much space in the first place (a universe of 64-bit integers,
+which is common for database join operations). Where to store the adaptivity
+bits is also unclear. We need adaptivity bits for every element in
+the set, but since our set is stored as a quotient filter, unless
+we want to be constantly resizing the entire quotient filter, the
+adaptivity bits should be stored in a separate memory. In general
+the concept of adaptivity bits is impractical because computers perform
+well when working with constant, repetitive data, which is the opposite
+of what is needed to implement adaptivity bits.
 
+Another key detail that proves impractical is the RevLookup operation
+needed in the remote data structure for extending the adaptivity bits. When
+an insertion happens, there may be fingerprints stored in the broom filter
+which are prefixes of the item being inserted. In that case the adaptivity
+bits of the colliding element need to be extended until they are no longer
+a prefix of the hash being inserted. To extend the adaptivity bits, we
+need the full hash of the colliding element, but since we only have its
+fingerprint stored in the broom filter, this will require a lookup in
+the remote storage. Efficiently supporting this lookup requires additionally
+maintaing a table of fingerprints to full hashes in the remote data structure
+which is quite costly because every time a fingerprint is extended in the
+broom filter, the same fingerprint needs to be extended in the remote table
+(which will require re-hashing the fingerprint if the remote table is maintained
+as a hash table).
+
+Other difficulties with implementation arise with the hash function. \cite{broom-filter}
+mention that the hash function must map $U \rightarrow \{0,\ldots,n^c\}$ where
+$n$ is the maximum set size and $c$ is a constant greater than 3. If the universe
+is larger than $n^c$ then it is possible to have a complete collision between
+$h(x)$ and $h(y)$. This has a low probability of occurring but if it does
+occur and the colliding element is repeatedly queried, then the false positive
+rate will be close to 1, causing the adaptivity of the filter to fall apart. Therefore
+our hash function must hash from the universe to something larger than the universe
+and be a perfect hash function to avoid these collisions. This immediately rules
+out using the broom filter for strings because in that case the universe is too large.
+In addition, with a universe of 64-bit integers, we have to use a hash function
+that maps to integers larger than 64 bits (unless we want a maximum set size capped
+at $2^{16}$ which is fairly small), and maintaining integers larger than the computer's
+word size is impractical.
 
 \subsection{A Lower Bound for Adaptivity} While we may have found the
 implementation of the Broom Filter to be somewhat unwieldy in practice, there

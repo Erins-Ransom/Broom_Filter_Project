@@ -3,12 +3,12 @@
 
     Bloom filters and other approximate membership query data structures, or
     AMQs, are often used to help avoid costly lookups to large dictionaries.
-    They achieve this by keeping a small, probabilistic representation of a set
+    They achieve this by keeping a compact representation of a set
     {\bf S} of keys from a universe {\bf U}.  All AMQs support inserts and lookups
     while some also support deletes.  When performing a lookup for an item $x$
-    that has been inserted, i.e. $x\in {\bf S}$, the AMQ will always return
-    {\it true}.  The downside of their compact representation of {\bf S} is
-    that, when a lookup is performed for an item $x \notin {\bf S}$, {\it true}
+    that has been inserted, i.e. $x\in {\bf S}$, the AMQ is guaranteed to return
+    {\it present}.  The downside of their compact representation of {\bf S} is
+    that, when a lookup is performed for an item $x \notin {\bf S}$, {\it present}
     may be returned with probability $\epsilon$.  This {\bf false-positive
     probability} is a usually a tunable parameter with a lower $\epsilon$
     typically requiring more space to be used by the AMQ.  That said, their
@@ -18,7 +18,7 @@
     concerns when analyzing an AMQ are then, how often does it return
     false-positives and how much space does it require to do so?
 
-    The majority of current AMQs only offer strong guarantees for individual
+    The majority of current AMQs only offer strong guarantees for independent
     queries, but the false-positive probability rate for most of these can be
     pushed toward 1 given the right sequence of queries.  In the adversarial
     case, this can be done by repeated lookups of elements that result in
@@ -27,7 +27,7 @@
     on the circumstances.  For example, Mitzenmacher et al.
     \cite{adaptive-cuckoo} discuss how repeated lookups can arise during packet
     processing because the lookups may correspond to flow identifiers.  Their
-    solution to this problem was to create variant of the Cuckoo Filter
+    solution to this problem was to create a variant of the Cuckoo Filter
     \cite{cuckoo-filter} which adapts to false positives by removing them for
     future queries and show using simulations that this does indeed result in a
     better false positive rate under such circumstances.  Bender et al.
@@ -38,8 +38,5 @@
     false-positive probability of $\epsilon$ for each query regardless of the
     answers to previous queries and show that the Broom Filter is proveably
     adaptive.
-	
-    Given a proveably adaptive AMQ, we have set out to try and put these strong
-    guarantees use.  Describe stuff about what we do here ...
 
 \end{document}

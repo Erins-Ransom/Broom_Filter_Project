@@ -9,16 +9,16 @@ Bloomier Filter requires $O((n+w)\log(1/\epsilon))$ bits and the list of bad que
 cannot be dynamically updated without a potential blow up in space.   A more dynamic 
 method that has been explored is to targetedly remove false-positives at the cost of 
 introducing random false-negatives.  This can be seen in {\it Retouched Bloom Filters} 
-\cite{retouched-filter}; however, not all applications are tolerant of false-positives 
+\cite{retouched-filter}; however, not all applications are tolerant of false-negatives 
 which makes this option less viable depending on the situation.  Yet another method 
 that has been used is to assign different numbers of hash functions to different elements
 depending on their frequency as seen in {\it Weighted Bloom Filters} \cite{weighted-filter};
-however, this technique is dependent predetermined statistics and is not able to dynamically
-adapt.  More recently, another method has been explored were the representations for 
+however, this technique is dependent on statistics gathered about the workload and is not able to dynamically
+adapt.  More recently, another method has been explored where the representations for 
 elements within the AMQ are changed in response to false positives as seen in the {\it 
 Adaptive Cuckoo Filter} \cite{adaptive-cuckoo} and {\it Broom Filter} \cite{broom-filter}. 
-Both of these make use of a technique were a second structure that is accessed in tandem 
-with the underlying set and is used to provide the information required to adapt to 
+Both of these use a technique where a second structure is accessed in tandem 
+with the underlying set that is used to provide the information required to adapt to 
 false-positives.  We will go into greater detail on these last two because they are the most
 rigorous solutions to adaptive AMQs that we could find.  
 
