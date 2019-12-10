@@ -248,8 +248,8 @@ at $2^{16}$ which is fairly small), and maintaining integers larger than the com
 word size is impractical.
 
 \subsection{A Lower Bound for Adaptivity} While we may have found the
-implementation of the Broom Filter to be somewhat unwieldy in practice, there
-is still a very important takeaway.  As part of the Broom Filter's design,
+implementation of the Broom Filter to be impractical in practice, the paper's theory
+section offers an important insight in designing adaptive filters. As part of the Broom Filter's design,
 Bender et al. also prove that any AMQ storing a set of size $n$ from a universe
 of size $u > n^4$ requires $\Omega (\min \{n\log n, n\log\log u\})$ bits of
 space with high probability in order to maintain a sustained false-positive
