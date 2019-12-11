@@ -50,14 +50,14 @@ The three metadata bits provide the following information for each bucket:
 \begin{enumerate}
     \item \texttt{occupied} bit: is the bucket occupied?
     \item \texttt{shifted} bit: is the remainder stored at this bucket shifted from its corresponding quotient?
-    \item \texttt{run} bit: is this bucket a part of a run?
+    \item \texttt{continuation} bit: is this bucket a part of the continuation of a run?
 \end{enumerate}
 
     Whenever a remainder is
     added, the \texttt{occupied} bit for its intended bucket is always set to 1.  If
     a remainder is not stored in its intended bucket, then the \texttt{shifted} bit
     of the bucket it is stored in is set to 1.  If the remainder has the same
-    intended bucket as the remainder immediately before it, the \texttt{run} bit is set to 1.  When we
+    intended bucket as the remainder immediately before it, the \texttt{continuation} bit is set to 1.  When we
     perform a lookup for element $x$, we check the bucket indexed by the first
     $q$ bits of $h(x)$.  If \texttt{occupied} is 0, we immediately return
     \textit{absent}; otherwise, if \texttt{shifted} is 0, we scan the current run for a remainder

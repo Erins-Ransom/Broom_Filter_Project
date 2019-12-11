@@ -9,12 +9,19 @@
     that has been inserted, i.e. $x\in S$, the AMQ is guaranteed to return
     {\it present}.  The downside of their compact representation of $S$ is
     that, when a lookup is performed for an item $x \notin S$, {\it present}
-    may be returned with probability $\epsilon$.  This {\bf false-positive
+    may be returned with probability $\epsilon$. In the dictionary context,
+    upon receiving a query for an element, an AMQ can be used to quickly
+    determine if the element is in the dictionary at all, and if not the
+    costly dictionary access can be avoided. With probability $\epsilon$
+    the AMQ will return a false-positive, causing a dictionary lookup
+    when one was not necessary.
+    
+    This {\bf false-positive
     probability} is a usually a tunable parameter with a lower $\epsilon$
-    typically requiring more space to be used by the AMQ.  That said, their
-    compact representation is also what makes them helpful since they can be
+    typically requiring more space to be used by the AMQ.  That said, the compact representation
+    of an AMQ is also what makes it helpful since it can be
     kept in memory or on a local machine and queried locally to avoid having to
-    access disk or another machine over a network.  As such, two of the primary
+    access disk or another machine over a network. The two primary
     concerns when analyzing an AMQ are then, how often does it return
     false-positives and how much space does it require to do so?
 
@@ -44,6 +51,6 @@
     and the broom filter. We study the theory for designing adaptive filters and
     compare the two filters' theoretical guarantees and practical performance.
     Through a long endeavor to implement the broom filter, we find concerns about
-    the broom filter that makes it impractical. In other words, adaptive cuckoo
-    filter is currently the most practical solution for adaptive AMQs.
+    the broom filter that makes it impractical. In other words, we find that adaptive cuckoo
+    filters are currently the most practical solution for adaptive AMQs.
 \end{document}
