@@ -29,11 +29,17 @@ the Bloomier filter \cite{bloomier-filter}, an early attempt at adapting to fals
 using a whitelist, could be expanded to be adaptive with real world network data by changing the whitelist to a
 cache of previously seen false positives.
 
-% The broom filter and the ACF take different approaches towards adaptivity. The broom filter extends
-% stored fingerprints using the concept of adaptivity bits, which we have seen is impractical, while
-% the ACF achieves adaptivity by changing the hash functions used dynamically. Perhaps this idea of
-% switching hash functions can be applied more generally to many different kinds of AMQs via a method
-% of partitioning. Suppose we maintain an array of AMQs, each with a family of hash functions,
+The broom filter and the ACF take different approaches towards adaptivity. The broom filter extends
+stored fingerprints using the concept of adaptivity bits, which we have seen is less practical, while
+the ACF achieves adaptivity by changing the hash functions used dynamically. Perhaps this idea of
+switching hash functions can be applied more generally to many different kinds of AMQs via a method
+of partitioning and re-hashing. We can try to maintain an array of AMQs, and rehash/redistribute load
+among the sub-AMQs when there is a false-positive. More work is needed to work out the details of this
+idea and determine if it is viable, since rehashing/redistributing is often expensive and can be
+difficult without the original value of the element. Nonetheless, this type of idea could prove
+interesting for a future data structure.
+
+% Suppose we maintain an array of AMQs, each with a family of hash functions,
 % $h_1,h_2,\ldots$. All AMQs start by using $h_1$. Operations on the partitioned AMQ will first
 % hash the element to a sub-AMQ, and then insert/lookup there. If an AMQ experiences a false-positive,
 % it increments its hash function and re-hashes all elements in the partition. The re-hashing is the
