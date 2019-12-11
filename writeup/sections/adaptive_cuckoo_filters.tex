@@ -53,16 +53,18 @@ A false positive occurs when an element $y\not\in S$ shares the same fingerprint
 Cuckoo hash table. To adapt for this false positive, we increment $\alpha$ and change the fingerprint for $x$ accordingly. It is unlikely for $x,y$ to share the same fingerprint again.
 Therefore, the filter has adapted to this false positive. The adaptive cuckoo filter shares a similar generalization as the cuckoo filter for cases where each bucket has more than one cell, with some changes to the adapting algorithm.
 
-Below is a table of the three different cuckoo structures and what they store in each slot.
+Table 1 illustrates the three different cuckoo structures and what they store in each slot.
 
 \begin{table}
 \centering
+\label{cuckoo-tab}
 \begin{tabular}{|c|c|}
 \hline  Data Structure & Object in each Slot \\
 \hline Cuckoo Hash Table & Element $x\in S$ \\
 \hline Classic Cuckoo Filter & Fingerprint $\on{hash}(x)$ \\
 \hline Cuckoo Filter in ACF & Pair $(f_\alpha(x),\alpha)$ \\ \hline
 \end{tabular}
+\caption{Objects Stored in Each Cuckoo Data Structure}
 \end{table}
 
 Although their paper does not present many theoretical guarantees about their filter, Mitzenmacher et.\ al performed simulations with randomly generated queries and real-world data and found that in practice the adaptive cuckoo filter beats the cuckoo filter in most configurations where some queries are repeated more than others. Cuckoo filters already boast high efficiency in practice, which makes the adaptive cuckoo filters even more impressive.
