@@ -71,18 +71,18 @@ The three metadata bits provide the following information for each bucket:
     may be multiple) and removing it and then shifting other remainders and
     updating metadata bits as needed.
     
-    Let $k$ be the number of occupied buckets in the filter. A false positive thus occurs if $h(x) =
+    Let $m$ be the number of occupied buckets in the filter (the number of elements that have been inserted so far). A false positive thus occurs if $h(x) =
     h(y)$ when $x \in S$ and $y \notin S$.  Assuming $h: {\bf U} \rightarrow
     \{0, ... , 2^{q+r}-1\}$ generates outputs that are distributed uniformly
     and independently, then the probability of a false positive is given by $$
-    1 - \big(1 - \frac{1}{2^{q+r}}\big)^k \approx 1- e^{-k/(q+r)} \leq
-    \frac{k}{2^{(q+p)}} \leq \frac{2^q}{2^{(q+r)}} \leq 2^{-r}.$$
+    1 - \left(1 - \frac{1}{2^{q+r}}\right)^m \approx 1- e^{-m/(q+r)} \leq
+    \frac{m}{2^{(q+r)}} \leq \frac{2^q}{2^{(q+r)}} \leq 2^{-r}.$$
 
     If we would like to choose $r$ and $q$ such that the filter has a false-positive
     probability of at most $\epsilon$, and $n$ is the maximum set size, we can choose $q=\log(n)$
     and $r=\log(1/\epsilon)$.
     With these choices, the quotient filter achieves a false-positive probability of at most
-    $2^{-r} = \epsilon$ while using $O(2^q r) = O(n \log (1/\epsilon)$ space.  	
+    $2^{-r} = \epsilon$ while using $O(2^q r) = O(n \log (1/\epsilon))$ space.  	
 
 \subsection{Adding Adaptivity}
 
