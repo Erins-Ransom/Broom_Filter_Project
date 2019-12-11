@@ -39,6 +39,9 @@ full, linear probing is used to find an empty bucket, provided two invariants ar
     \item If remainder $a$ is stored before remainder $b$, then the quotient of $a$ is less than or equal to the quotient of $b$ modulo the wrapping.
 \end{enumerate}
 
+This means that inserting into a run that is followed immediately by another run may require
+shifting everything in the following run over to make room.
+
 We then have to apply the correct metadata bits to all buckets that are touched by the probe. These metadata
 bits will allow us to determine which remainders correspond to which quotients,
 since due to linear probing remainders will be shifted from their correct quotients.
@@ -70,6 +73,15 @@ The three metadata bits provide the following information for each bucket:
     can be performed by looking up the corresponding remainder (of which their
     may be multiple) and removing it and then shifting other remainders and
     updating metadata bits as needed.
+
+    \begin{figure}
+      \centering
+        \includegraphics[scale=0.3]{qf.png}
+      \label{fig:qf}
+        \caption{An example quotient filter as shown in \cite{quotient-filter}. The filter has 10 slots,
+        and for a fingerprint $f$, the remainder $f_r$ is stored in the bucket indexed by the quotient $f_q$. The
+        remainder will be shifted from its intended bucket when there are quotient collisions.}  
+    \end{figure}
 
 % \subsubsection{Example}
     
@@ -236,6 +248,8 @@ the broom filter, but some key implementation details are left out. In this sect
 we provide some additional details regarding how one might implement a broom filter
 and the practical issues that arise.
 
+\subsubsection{Adaptivity bits}
+
 Most notably, the storage of the adaptivity bits is a real problem
 because they are variable-sized chunks of memory that
 do not fit nicely into machine words. Storing the adaptivity
@@ -257,6 +271,8 @@ of what is needed to implement adaptivity bits. Small, often single-bit
 extensions to variable-sized pieces of memory is an inefficient paradigm
 in practice.
 
+\subsubsection{Remote layout}
+
 Another key detail that is not given attention by Bender et al. is the layout
 of the remote data structure, and its implementation of a \texttt{RevLookup}
 function, which will find the full hash of an item $x$ given by its fingerprint
@@ -271,6 +287,17 @@ ineffective as extending a fingerprint would require first extending the bits of
 the key and then re-hashing and re-inserting the element. Maintaining this mapping
 as a radix tree seems better because extending keys is not as difficult and
 we are already make sure that no key is a prefix of any other.
+
+\begin{figure}
+  \centering
+    \includegraphics[scale=0.2]{radix_tree.png}
+  \label{fig:radix_tree}
+    \caption{Using a radix tree (compressed binary tree in this case) to map fingerprints
+    to hashes. Extending adaptivity bits is much less costly with this structure than with
+    a hashtable.}  
+\end{figure}
+
+\subsubsection{Hashing}
 
 Other difficulties with implementation arise with the hash function. Bender et al.
 mention that the hash function must map $U \rightarrow \{0,\ldots,n^c\}$ where
