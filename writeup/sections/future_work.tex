@@ -30,11 +30,11 @@ using a whitelist, to be adaptive with real world network data by changing the w
 cache of previously seen false positive.
 
 \subsection{Adaptive Bloom Filters to Speed Up Databases}
-Many existing databases, for example Postgres, use bloom filters to speed up disk lookups. In these
+Many existing databases, for example PostgreSQL, use bloom filters to speed up disk lookups. In these
 applications, many queries are run repeatedly to gather real-time data and it is possible that
 some of the queries can repeatedly trigger the same group of false-positives. Is it possible to use
 a practical adaptive AMQ, such as the adaptive cuckoo filter, to speed up query lookup times? We can
-benchmark this using databases from Harvard courses or on a Postgres fork.
+benchmark this using databases from Harvard courses or on a fork of the PostgreSQL database.
 
 \end{document}
 

@@ -2,7 +2,8 @@
 \begin{document}
 \newcommand{\on}{\operatorname}
 The \emph{adaptive cuckoo filter} \cite{adaptive-cuckoo} is a practical solution to the AMQ problem with adaptivity, combining a cuckoo filter and cuckoo hash table. Both of these structures are based on the
-technique of \emph{cuckoo hashing}, where having two choices for each object allows for constant lookup times. We now describe the tools used in an adaptive cuckoo filter\footnote{Which we'll keep brief since the reader invented this data structure.}.
+technique of \emph{cuckoo hashing}, where each element can be stored in two different locations. We first describe the tools used in an adaptive cuckoo filter, then describe how ACF uses them to be adaptive
+\footnote{Which we will keep brief since the reader invented this data structure.}.
 
 \subsection{Cuckoo Hashing}
 The adaptive cuckoo filter uses a cuckoo hash table \cite{cuckoo-hash} and the cuckoo filter \cite{cuckoo-filter}. As the name suggests, the cuckoo filter is an

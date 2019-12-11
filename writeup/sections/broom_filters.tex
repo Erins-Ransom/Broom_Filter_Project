@@ -3,7 +3,7 @@
 \begin{document} Bender et al. \cite{broom-filter} introduce a different adaptive filter, called the ``broom filter''
 (because it cleans up after itself). They make two key contributions to the
 field of adaptive filters: describing the broom filter data structure itself,
-as well as formalizing the idea of adaptivity and providing proofs regarding the guaratees
+as well as formalizing the idea of adaptivity and providing proofs regarding the guarantees
 of the broom filter, and adaptive AMQs in general. The broom filter builds on
 a previous AMQ called the quotient filter \cite{quotient-filter}, and, like the adaptive
 cuckoo filter, consists of both a local and remote representation. In fact, one
@@ -227,7 +227,7 @@ used if $x > z$ and $h_b$ is used otherwise.  Once $z$ reaches the largest
 element in $S$, then a new phase begins.  This is then enough to guarantee
 that, with high probability, there are $O(n)$ adaptivity bits in the
 filter at any given time.  The broom filter thus achieves adaptivity while
-still only using $O(n \log (1/\epsilon)$ space locally.  
+still only using $O(n \log (1/\epsilon))$ space locally.  
 
 \subsection{Implementation details}
 
