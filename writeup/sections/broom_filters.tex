@@ -279,9 +279,9 @@ larger than $2^{16}$ requires using a hash function that produces $>64$-bit inte
 Maintaining integers that are larger than the word size (and that may not fit in a multiple
 of the word size) is often impractical and difficult.
 
-\subsection{A Lower Bound for Adaptivity} While we may have found the
-implementation of the Broom Filter to be impractical in practice, the paper's theory
-section offers an important insight in designing adaptive filters. As part of the Broom Filter's design,
+\subsection{A Lower Bound for Adaptivity} While the
+implementation of the broom filter may be impractical, the paper's theory
+section offers an important insight in the design of adaptive AMQs. As part of the broom filter's design,
 Bender et al. also prove that any AMQ storing a set of size $n$ from a universe
 of size $u > n^4$ requires $\Omega (\min \{n\log n, n\log\log u\})$ bits of
 space with high probability in order to maintain a sustained false-positive
@@ -290,7 +290,7 @@ local representation is to be near the optimal size for a traditional AMQ and
 why it is not surprising that the Adaptive Cuckoo Filter also shares this two
 part structure.  A similar proof was explored with the {\it Bloomier Filter} 
 \cite{bloomier-filter} in assessing the space required when dynamically 
-updating it's whitelist. The proof makes use of adversarial model where the 
+updating its whitelist. The proof makes use of adversarial model where the 
 goal of the adversary is to adaptively generate a sequence of $O(n)$ lookups 
 that force the AMQ to either use too much space or to fail to sustain its 
 false-positive rate of $\epsilon$.  
@@ -301,10 +301,10 @@ false-positive rate of $\epsilon$.
 	of $Q$ are then looked up. On each subsequent round, any false-positives from the 
 	previous round are queried again. 
 	
-	The general idea of the proof is that, we expect the adversary to find a certain 
+	The idea of the proof is that we expect the adversary to find a certain 
 	fraction of false-positives which is shown to have a high concentration using Chernoff
 	bounds.  Therefore, with high probability, the AMQ will have to fix an $\epsilon$ fraction
-	of false-positives in each round or fail to sustain it's false-positive rate.  Each time the 
+	of false-positives in each round or fail to sustain its false-positive rate.  Each time the 
 	AMQ corrects a false-positive it must change its configuration.  Each configuration of the 
 	AMQ for a given set $S$ can be defined using the list of false-positives that have been
 	corrected.  This results in a one-to-one mapping between the set of fixed false-positives 
@@ -312,11 +312,8 @@ false-positive rate of $\epsilon$.
 	bounded by the number of sets of false-positives that the adversary can force the AMQ
 	to fix.  The space required for the AMQ is thus lower bounded by the amount of space 
 	required to enumerate its configurations.  Finally, the bound is shown to be tight by 
-	providing a construction on an AMQ, the Broom Filter, that uses $O(\min \{n\log n, 
+	providing a construction on an AMQ, the broom filter, that uses $O(\min \{n\log n, 
 	n\log\log u\})$ bits of space with high probability. 
-	
-	
-
 
 \end{document}
 
