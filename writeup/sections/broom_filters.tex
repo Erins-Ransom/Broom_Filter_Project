@@ -13,7 +13,7 @@ our experience the broom filter is quite impractical. Even a naive implementatio
 would be cumbersome and time-consuming to write, and important details such as
 how adaptivity bits can be stored and maintained efficiently are left out.
 
-\subsection{The Quotient Filter}
+\subsection{Quotient Filters}
 
 The broom filter builds on a previous work called the quotient filter, which
 is a non-adaptive AMQ meant to be an optimal and practical alternative to a bloom filter.
@@ -119,7 +119,7 @@ to insert an item to the dictionary).
 
 \subsubsection{Local representation}
 
-The details of the local representation are presented here and are tuned to
+The details of the local representation are presented here but are tuned to
 improve lookup and insert performance, rather than for enabling adaptivity,
 so we only give a brief overview here.
 Let $n$ be the maximum set size that will be stored by the broom filter, and $\epsilon$
@@ -132,6 +132,18 @@ functions. The first layer contains $O(n)$ buckets and the second layer contains
 $O(\log n/n)$ buckets. In the \textbf{large remainder} case, where $r > 2 \log \log n$,
 only a single hash function is used and backyard hashing \cite{backyard-hashing} is used
 to differentiate them.
+
+Insertion and deletion in the quotient filters used by the broom filter are slightly modified to ensure constant-time
+accesses. In particular, a probe limit is imposed in both cases on the first layer's quotient filter.
+If a valid bucket is not found in $O((\log n)/r)$ probes (in the small remainder case) or $O(\log n / \log \log n)$
+probes (in the large remainder case), then the second layer is used to execute the corresponding operation.
+
+\begin{figure}[H]
+  \centering
+    \includegraphics[scale=0.3]{probe.png}
+  \label{fig:probe}
+    \caption{In the small remainder case, two hash functions are used and the second layer is smaller than the first layer. Probing in the first layer is cut off after a threshold to ensure constant-time accesses.}  
+\end{figure}
 
 \subsubsection{Hash function}
 

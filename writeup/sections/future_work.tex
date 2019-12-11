@@ -3,31 +3,41 @@
 After the strenuous hardship that is the broom filter implementation attempt,
 we present some future directions for this project. We believe that the directions
 we pose are actual directions for potential research, not clich\'e generalizations,
-and plan to continue exploring these topics.
+and hope to continue exploring these topics.
 
 \subsection{Benefits of Rigorous Adaptivity}
-While the fully optimized design of the Broom Filter proved difficult to implement,
+While the fully optimized design of the broom filter proved difficult to implement (especially given time constraints),
 a naive implementation that uses as much space as it wants would likely be 
-more feasible.  This in turn could be used to see the benefits of the Broom Filter's
+more feasible.  This in turn could be used to see the benefits of the broom filter's
 strong guarantees in actual work loads.  This could also be used to test whether 
 strategies that are simpler to implement but may have weaker theoretical 
 guarantees, like the Adaptive Cuckoo Filter, actually fair any worse in practice.  
 
 \subsection{A Generalized Framework for Adaptivity}
 Bender et al. \cite{broom-filter} made significant strides in showing what is required
-for a generalized AMQ to be adaptive, in particular their lower bound on the required 
+for a generalized AMQ to be adaptive, in particular with their lower bound on the required 
 space, but this can likely be taken even further.  For example, are the discrete 
 representations of elements that we see in both the Adaptive Cuckoo and Broom 
-Filters also a requirement for adaptivity or could a traditional Bloom Filter  be made 
+Filters also a requirement for adaptivity or could a traditional Bloom Filter be made 
 adaptive using the right strategy?
 
 \subsection{Making More AMQs Adaptive}
 After analyzing the adaptive cuckoo filter \cite{adaptive-cuckoo} and Bender et al.'s work on
-making a generalized AMQ adaptive, we aim to apply our newfound knowledge of adaptivity to other
-currently non-adaptive AMQs, especially with real world traffic data. For example, we plan to
-expand the Bloomier filter \cite{bloomier-filter}, an early attempt at adapting to false positive
-using a whitelist, to be adaptive with real world network data by changing the whitelist to a
-cache of previously seen false positive.
+making a generalized AMQ adaptive, we can apply our newfound knowledge of adaptivity to other
+currently non-adaptive AMQs, especially with real world traffic data. For example, perhaps
+the Bloomier filter \cite{bloomier-filter}, an early attempt at adapting to false positive
+using a whitelist, could be expanded to be adaptive with real world network data by changing the whitelist to a
+cache of previously seen false positives.
+
+% The broom filter and the ACF take different approaches towards adaptivity. The broom filter extends
+% stored fingerprints using the concept of adaptivity bits, which we have seen is impractical, while
+% the ACF achieves adaptivity by changing the hash functions used dynamically. Perhaps this idea of
+% switching hash functions can be applied more generally to many different kinds of AMQs via a method
+% of partitioning. Suppose we maintain an array of AMQs, each with a family of hash functions,
+% $h_1,h_2,\ldots$. All AMQs start by using $h_1$. Operations on the partitioned AMQ will first
+% hash the element to a sub-AMQ, and then insert/lookup there. If an AMQ experiences a false-positive,
+% it increments its hash function and re-hashes all elements in the partition. The re-hashing is the
+% difficult part because we 
 
 \subsection{Adaptive Bloom Filters to Speed Up Databases}
 Many existing databases, for example Postgres, use bloom filters to speed up disk lookups. In these
