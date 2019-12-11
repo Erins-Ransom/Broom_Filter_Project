@@ -105,6 +105,8 @@ to avoid remote lookups, but the AMQ will only ever access the remote structure
 when it would have been accessed anyway (to look up an item in the dictionary or
 to insert an item to the dictionary).
 
+\subsubsection{Local representation}
+
 The details of the local representation are presented here and are tuned to
 improve lookup and insert performance, rather than for enabling adaptivity,
 so we only give a brief overview here.
@@ -119,6 +121,8 @@ $O(\log n/n)$ buckets. In the \textbf{large remainder} case, where $r > 2 \log \
 only a single hash function is used and backyard hashing \cite{backyard-hashing} is used
 to differentiate them.
 
+\subsubsection{Hash function}
+
 The broom filter uses hash functions $h : {\bf U} \rightarrow \{0, ..., n^c\}$, for
 some constant $c \geq 4$. The constant $c$ must ensure that the target set of the hash
 function is large enough that the hash function is perfect and cannot cause elements
@@ -128,6 +132,8 @@ AMQ this doesn't cause space problems.
 %  Suffice to say, both representations
 %     require $O(n\log(1/\epsilon)$ space as well as $O(n)$ space for the
 %     adaptivity bits.  
+
+\subsubsection{Inserts, lookups, and adaptivity bits}
 
 In the broom filter, the \textbf{fingerprint} of an element $x$ is comprised of the first
 $q + r + a$ bits of the hash of $x$, where $q$ is the number of quotient bits, $r$ is the
@@ -181,6 +187,8 @@ resolved by allowing fingerprints to grow beyond the size of their hash,
 but this would likely have problematic implications for the size of the
 local representation.  This does not appear to be addressed in the design
 of the Broom Filter.  
+
+\subsubsection{Deletions and cleanup}
 
 What has been described so far is sufficient to achieve adaptivity for an AMQ that
 only supports insertions and lookups, since no lookup for any given element will
